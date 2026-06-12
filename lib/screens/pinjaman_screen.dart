@@ -53,7 +53,7 @@ class _PinjamanScreenState extends State<PinjamanScreen> {
       body: Padding(
         padding: const EdgeInsets.all(40),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Left Column: Search & View Member Loan History
             Expanded(
@@ -205,10 +205,14 @@ class _PinjamanScreenState extends State<PinjamanScreen> {
                                             title: Row(
                                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                               children: [
-                                                Text(
-                                                  '$nama (${l['anggota_id']})',
-                                                  style: const TextStyle(fontWeight: FontWeight.bold),
+                                                Expanded(
+                                                  child: Text(
+                                                    '$nama (${l['anggota_id']})',
+                                                    style: const TextStyle(fontWeight: FontWeight.bold),
+                                                    overflow: TextOverflow.ellipsis,
+                                                  ),
                                                 ),
+                                                const SizedBox(width: 8),
                                                 Text(
                                                   'ID: ${l['pinjaman_id']}',
                                                   style: CarbonTypography.caption,

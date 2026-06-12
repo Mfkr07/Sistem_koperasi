@@ -65,7 +65,7 @@ class _AnggotaScreenState extends State<AnggotaScreen> {
       body: Padding(
         padding: const EdgeInsets.all(40),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Left Column: Member List Table
             Expanded(
@@ -251,6 +251,7 @@ class _AnggotaScreenState extends State<AnggotaScreen> {
                         const SizedBox(height: 8),
                         DropdownButtonFormField<String>(
                           value: _tipeAngkutan,
+                          isExpanded: true,
                           items: const [
                             DropdownMenuItem(value: 'SENDIRI', child: Text('SENDIRI (Rp. 0)')),
                             DropdownMenuItem(value: 'DUSUN', child: Text('DUSUN (Tarif Dusun)')),
@@ -271,6 +272,7 @@ class _AnggotaScreenState extends State<AnggotaScreen> {
                           const SizedBox(height: 8),
                           DropdownButtonFormField<String>(
                             value: _selectedKoorId,
+                            isExpanded: true,
                             items: state.koordinators.map((k) {
                               return DropdownMenuItem(
                                 value: k.koordinatorId,
@@ -306,6 +308,7 @@ class _AnggotaScreenState extends State<AnggotaScreen> {
                           const SizedBox(height: 8),
                           DropdownButtonFormField<int>(
                             value: _statusAktif,
+                            isExpanded: true,
                             items: const [
                               DropdownMenuItem(value: 1, child: Text('AKTIF')),
                               DropdownMenuItem(value: 0, child: Text('NON-AKTIF')),

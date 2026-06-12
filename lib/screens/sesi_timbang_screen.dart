@@ -59,7 +59,7 @@ class _SesiTimbangScreenState extends State<SesiTimbangScreen> {
       body: Padding(
         padding: const EdgeInsets.all(40),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Left Column: Sesi Form or Active Sesi Details
             Expanded(
@@ -305,6 +305,7 @@ class _SesiTimbangScreenState extends State<SesiTimbangScreen> {
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
               value: _selectedKoorId,
+              isExpanded: true,
               items: state.koordinators.map((k) {
                 return DropdownMenuItem(
                   value: k.koordinatorId,

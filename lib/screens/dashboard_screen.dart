@@ -235,10 +235,14 @@ class DashboardScreen extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                title,
-                style: CarbonTypography.caption.copyWith(color: CarbonColors.inkMuted),
+              Expanded(
+                child: Text(
+                  title,
+                  style: CarbonTypography.caption.copyWith(color: CarbonColors.inkMuted),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
+              const SizedBox(width: 8),
               Icon(icon, color: CarbonColors.primary, size: 20),
             ],
           ),
@@ -247,13 +251,16 @@ class DashboardScreen extends StatelessWidget {
             value,
             style: CarbonTypography.cardTitle.copyWith(
               fontWeight: FontWeight.bold,
-              fontSize: 28,
+              fontSize: 24,
             ),
+            overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 8),
           Text(
             subtitle,
             style: CarbonTypography.caption.copyWith(fontSize: 11),
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
           ),
         ],
       ),

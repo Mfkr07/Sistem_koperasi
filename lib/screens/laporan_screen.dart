@@ -118,31 +118,37 @@ class _LaporanScreenState extends State<LaporanScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Laporan & Audit Global',
-                      style: CarbonTypography.headline.copyWith(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Monitoring rekap timbangan dan keuangan koperasi sawit.',
-                      style: CarbonTypography.caption,
-                    ),
-                  ],
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Laporan & Audit Global',
+                        style: CarbonTypography.headline.copyWith(fontWeight: FontWeight.bold),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Monitoring rekap timbangan dan keuangan koperasi sawit.',
+                        style: CarbonTypography.caption,
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                      ),
+                    ],
+                  ),
                 ),
+                const SizedBox(width: 16),
                 Row(
                   children: [
                     _buildExportButton(
-                      label: 'Ekspor Rekap Excel',
+                      label: 'Ekspor Excel',
                       icon: Icons.table_view,
                       color: CarbonColors.success,
                       onTap: () => _exportGlobalExcel(filtered),
                     ),
                     const SizedBox(width: 16),
                     _buildExportButton(
-                      label: 'Ekspor PDF Laporan',
+                      label: 'Ekspor PDF',
                       icon: Icons.picture_as_pdf,
                       color: CarbonColors.primary,
                       onTap: () => _exportGlobalPdf(filtered),
@@ -246,11 +252,14 @@ class _LaporanScreenState extends State<LaporanScreen> {
                                       tileColor: isVoid ? CarbonColors.surface1 : CarbonColors.canvas,
                                       title: Row(
                                         children: [
-                                          Text(
-                                            '${tx['anggota_nama'] ?? tx['anggota_id']}',
-                                            style: TextStyle(
-                                              decoration: isVoid ? TextDecoration.lineThrough : null,
-                                              fontWeight: FontWeight.bold,
+                                          Expanded(
+                                            child: Text(
+                                              '${tx['anggota_nama'] ?? tx['anggota_id']}',
+                                              style: TextStyle(
+                                                decoration: isVoid ? TextDecoration.lineThrough : null,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                              overflow: TextOverflow.ellipsis,
                                             ),
                                           ),
                                           if (isVoid) ...[
@@ -361,8 +370,11 @@ class _LaporanScreenState extends State<LaporanScreen> {
         color: CarbonColors.surface1,
         border: Border.all(color: CarbonColors.hairline),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
+      width: double.infinity,
+      child: Wrap(
+        alignment: WrapAlignment.spaceAround,
+        spacing: 20,
+        runSpacing: 16,
         children: [
           _buildMiniMetric('Total Tonase', '$tonase Kg'),
           _buildMiniMetric('Total Bruto', PrinterService.formatCurrency(kotor)),
