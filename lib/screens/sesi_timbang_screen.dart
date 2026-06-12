@@ -9,6 +9,7 @@ import '../core/services/export_service.dart';
 import '../core/services/kalkulasi_service.dart';
 import '../core/database/database_helper.dart';
 import '../models/sesi_timbang.dart';
+import '../widgets/table_pagination.dart';
 
 class SesiTimbangScreen extends StatefulWidget {
   const SesiTimbangScreen({super.key});
@@ -27,6 +28,7 @@ class _SesiTimbangScreenState extends State<SesiTimbangScreen> {
   final _trsDusunController = TextEditingController(text: '100');
   final _trsIbolController = TextEditingController(text: '350');
   final _catatanController = TextEditingController();
+  int _currentPageHistory = 1;
 
   // Expense form fields
   final _expKategoriController = TextEditingController(text: 'TENAGA_KERJA');
@@ -101,39 +103,93 @@ class _SesiTimbangScreenState extends State<SesiTimbangScreen> {
                       ),
                       child: state.sessions.isEmpty
                           ? const Center(child: Text('Belum ada riwayat sesi.'))
-                          : ListView.separated(
-                              itemCount: state.sessions.length,
-                              separatorBuilder: (c, i) => const Divider(height: 1, color: CarbonColors.hairline),
-                              itemBuilder: (c, idx) {
-                                final sesi = state.sessions[idx];
-                                final koor = state.koordinators.firstWhere(
-                                  (k) => k.koordinatorId == sesi.koordinatorId,
-                                  orElse: () => state.koordinators.first,
-                                );
-                                
-                                return ListTile(
-                                  tileColor: CarbonColors.canvas,
-                                  title: Text('${sesi.tanggal} - ${koor.nama}'),
-                                  subtitle: Text(
-                                    'Harga: ${PrinterService.formatCurrency(sesi.hargaPerKg)} • ${sesi.status}'
+                          : Column(
+                              children: [
+                                Expanded(
+                                  child: ListView.separated(
+                                    itemCount: () {
+                                      final int itemsPerPage = 10;
+                                      final int totalItems = state.sessions.length;
+                                      final int totalPages = (totalItems / itemsPerPage).ceil();
+                                      int page = _currentPageHistory;
+                                      if (page > totalPages && totalPages > 0) {
+                                        page = totalPages;
+                                      }
+                                      final int startIndex = (page - 1) * itemsPerPage;
+                                      final int endIndex = startIndex + itemsPerPage;
+                                      final paginatedList = state.sessions.sublist(
+                                        startIndex,
+                                        endIndex > totalItems ? totalItems : endIndex,
+                                      );
+                                      return paginatedList.length;
+                                    }(),
+                                    separatorBuilder: (c, i) => const Divider(height: 1, color: CarbonColors.hairline),
+                                    itemBuilder: (c, idx) {
+                                      final int itemsPerPage = 10;
+                                      final int totalItems = state.sessions.length;
+                                      final int totalPages = (totalItems / itemsPerPage).ceil();
+                                      int page = _currentPageHistory;
+                                      if (page > totalPages && totalPages > 0) {
+                                        page = totalPages;
+                                      }
+                                      final int startIndex = (page - 1) * itemsPerPage;
+                                      final int endIndex = startIndex + itemsPerPage;
+                                      final paginatedList = state.sessions.sublist(
+                                        startIndex,
+                                        endIndex > totalItems ? totalItems : endIndex,
+                                      );
+                                      
+                                      final sesi = paginatedList[idx];
+                                      final koor = state.koordinators.firstWhere(
+                                        (k) => k.koordinatorId == sesi.koordinatorId,
+                                        orElse: () => state.koordinators.first,
+                                      );
+                                      
+                                      return ListTile(
+                                        tileColor: CarbonColors.canvas,
+                                        title: Text('${sesi.tanggal} - ${koor.nama}'),
+                                        subtitle: Text(
+                                          'Harga: ${PrinterService.formatCurrency(sesi.hargaPerKg)} • ${sesi.status}'
+                                        ),
+                                        trailing: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            IconButton(
+                                              tooltip: 'Ekspor Excel',
+                                              icon: const Icon(Icons.table_view, color: CarbonColors.success),
+                                              onPressed: () => _exportSessionData(context, sesi, isExcel: true),
+                                            ),
+                                            IconButton(
+                                              tooltip: 'Ekspor PDF',
+                                              icon: const Icon(Icons.picture_as_pdf, color: CarbonColors.primary),
+                                              onPressed: () => _exportSessionData(context, sesi, isExcel: false),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    },
                                   ),
-                                  trailing: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      IconButton(
-                                        tooltip: 'Ekspor Excel',
-                                        icon: const Icon(Icons.table_view, color: CarbonColors.success),
-                                        onPressed: () => _exportSessionData(context, sesi, isExcel: true),
-                                      ),
-                                      IconButton(
-                                        tooltip: 'Ekspor PDF',
-                                        icon: const Icon(Icons.picture_as_pdf, color: CarbonColors.primary),
-                                        onPressed: () => _exportSessionData(context, sesi, isExcel: false),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              },
+                                ),
+                                TablePagination(
+                                  currentPage: () {
+                                    final int itemsPerPage = 10;
+                                    final int totalItems = state.sessions.length;
+                                    final int totalPages = (totalItems / itemsPerPage).ceil();
+                                    int page = _currentPageHistory;
+                                    if (page > totalPages && totalPages > 0) {
+                                      page = totalPages;
+                                    }
+                                    return page;
+                                  }(),
+                                  totalItems: state.sessions.length,
+                                  itemsPerPage: 10,
+                                  onPageChanged: (newPage) {
+                                    setState(() {
+                                      _currentPageHistory = newPage;
+                                    });
+                                  },
+                                ),
+                              ],
                             ),
                     ),
                   ),

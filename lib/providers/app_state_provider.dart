@@ -500,6 +500,26 @@ class AppStateProvider extends ChangeNotifier {
     return list;
   }
 
+  Future<List<Map<String, dynamic>>> getAllPinjaman() async {
+    final list = await _dbHelper.query(
+      'pinjaman',
+      orderBy: 'created_at DESC',
+    );
+    
+    List<Map<String, dynamic>> hydrated = [];
+    for (var loan in list) {
+      final map = Map<String, dynamic>.from(loan);
+      final member = await _dbHelper.query('anggota', where: 'anggota_id = ?', whereArgs: [loan['anggota_id']]);
+      if (member.isNotEmpty) {
+        map['anggota_nama'] = member.first['nama'];
+      } else {
+        map['anggota_nama'] = 'Tidak Diketahui';
+      }
+      hydrated.add(map);
+    }
+    return hydrated;
+  }
+
   // --- Anggota Operations ---
 
   Future<void> tambahAnggota({

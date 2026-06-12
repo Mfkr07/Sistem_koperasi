@@ -5,6 +5,7 @@ import '../core/constants/typography.dart';
 import '../core/constants/strings.dart';
 import '../providers/app_state_provider.dart';
 import '../models/anggota.dart';
+import '../widgets/table_pagination.dart';
 
 class AnggotaScreen extends StatefulWidget {
   const AnggotaScreen({super.key});
@@ -24,6 +25,7 @@ class _AnggotaScreenState extends State<AnggotaScreen> {
   String _tipeAngkutan = 'SENDIRI';
   String? _selectedKoorId;
   int _statusAktif = 1;
+  int _currentPage = 1;
 
   @override
   void dispose() {
@@ -79,7 +81,10 @@ class _AnggotaScreenState extends State<AnggotaScreen> {
                   
                   // Search
                   TextField(
-                    onChanged: (val) => setState(() => _searchQuery = val),
+                    onChanged: (val) => setState(() {
+                      _searchQuery = val;
+                      _currentPage = 1;
+                    }),
                     decoration: const InputDecoration(
                       hintText: 'Cari anggota...',
                       prefixIcon: Icon(Icons.search),
@@ -99,52 +104,106 @@ class _AnggotaScreenState extends State<AnggotaScreen> {
                       ),
                       child: filtered.isEmpty
                           ? const Center(child: Text('Tidak ada data anggota.'))
-                          : ListView.separated(
-                              itemCount: filtered.length,
-                              separatorBuilder: (c, i) => const Divider(height: 1, color: CarbonColors.hairline),
-                              itemBuilder: (c, idx) {
-                                final a = filtered[idx];
-                                final k = state.koordinators.firstWhere(
-                                  (koor) => koor.koordinatorId == a.koordinatorId,
-                                  orElse: () => state.koordinators.first,
-                                );
-                                
-                                return ListTile(
-                                  tileColor: CarbonColors.canvas,
-                                  title: Text(a.nama),
-                                  subtitle: Text('${a.anggotaId} • ${a.tipeAngkutan} • Koor: ${k.nama}'),
-                                  trailing: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                        color: a.statusAktif == 1 ? CarbonColors.success.withOpacity(0.1) : CarbonColors.error.withOpacity(0.1),
-                                        child: Text(
-                                          a.statusAktif == 1 ? 'AKTIF' : 'NON-AKTIF',
-                                          style: CarbonTypography.caption.copyWith(
-                                            color: a.statusAktif == 1 ? CarbonColors.success : CarbonColors.error,
-                                            fontWeight: FontWeight.bold,
-                                          ),
+                          : Column(
+                              children: [
+                                Expanded(
+                                  child: ListView.separated(
+                                    itemCount: () {
+                                      final int itemsPerPage = 10;
+                                      final int totalItems = filtered.length;
+                                      final int totalPages = (totalItems / itemsPerPage).ceil();
+                                      int page = _currentPage;
+                                      if (page > totalPages && totalPages > 0) {
+                                        page = totalPages;
+                                      }
+                                      final int startIndex = (page - 1) * itemsPerPage;
+                                      final int endIndex = startIndex + itemsPerPage;
+                                      final paginatedList = filtered.sublist(
+                                        startIndex,
+                                        endIndex > totalItems ? totalItems : endIndex,
+                                      );
+                                      return paginatedList.length;
+                                    }(),
+                                    separatorBuilder: (c, i) => const Divider(height: 1, color: CarbonColors.hairline),
+                                    itemBuilder: (c, idx) {
+                                      final int itemsPerPage = 10;
+                                      final int totalItems = filtered.length;
+                                      final int totalPages = (totalItems / itemsPerPage).ceil();
+                                      int page = _currentPage;
+                                      if (page > totalPages && totalPages > 0) {
+                                        page = totalPages;
+                                      }
+                                      final int startIndex = (page - 1) * itemsPerPage;
+                                      final int endIndex = startIndex + itemsPerPage;
+                                      final paginatedList = filtered.sublist(
+                                        startIndex,
+                                        endIndex > totalItems ? totalItems : endIndex,
+                                      );
+                                      
+                                      final a = paginatedList[idx];
+                                      final k = state.koordinators.firstWhere(
+                                        (koor) => koor.koordinatorId == a.koordinatorId,
+                                        orElse: () => state.koordinators.first,
+                                      );
+                                      
+                                      return ListTile(
+                                        tileColor: CarbonColors.canvas,
+                                        title: Text(a.nama),
+                                        subtitle: Text('${a.anggotaId} • ${a.tipeAngkutan} • Koor: ${k.nama}'),
+                                        trailing: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                              color: a.statusAktif == 1 ? CarbonColors.success.withOpacity(0.1) : CarbonColors.error.withOpacity(0.1),
+                                              child: Text(
+                                                a.statusAktif == 1 ? 'AKTIF' : 'NON-AKTIF',
+                                                style: CarbonTypography.caption.copyWith(
+                                                  color: a.statusAktif == 1 ? CarbonColors.success : CarbonColors.error,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            IconButton(
+                                              icon: const Icon(Icons.edit_outlined, size: 20),
+                                              onPressed: () {
+                                                setState(() {
+                                                  _editingAnggota = a;
+                                                  _namaController.text = a.nama;
+                                                  _noHpController.text = a.noHp ?? '';
+                                                  _tipeAngkutan = a.tipeAngkutan;
+                                                  _selectedKoorId = a.koordinatorId;
+                                                  _statusAktif = a.statusAktif;
+                                                });
+                                              },
+                                            ),
+                                          ],
                                         ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      IconButton(
-                                        icon: const Icon(Icons.edit_outlined, size: 20),
-                                        onPressed: () {
-                                          setState(() {
-                                            _editingAnggota = a;
-                                            _namaController.text = a.nama;
-                                            _noHpController.text = a.noHp ?? '';
-                                            _tipeAngkutan = a.tipeAngkutan;
-                                            _selectedKoorId = a.koordinatorId;
-                                            _statusAktif = a.statusAktif;
-                                          });
-                                        },
-                                      ),
-                                    ],
+                                      );
+                                    },
                                   ),
-                                );
-                              },
+                                ),
+                                TablePagination(
+                                  currentPage: () {
+                                    final int itemsPerPage = 10;
+                                    final int totalItems = filtered.length;
+                                    final int totalPages = (totalItems / itemsPerPage).ceil();
+                                    int page = _currentPage;
+                                    if (page > totalPages && totalPages > 0) {
+                                      page = totalPages;
+                                    }
+                                    return page;
+                                  }(),
+                                  totalItems: filtered.length,
+                                  itemsPerPage: 10,
+                                  onPageChanged: (newPage) {
+                                    setState(() {
+                                      _currentPage = newPage;
+                                    });
+                                  },
+                                ),
+                              ],
                             ),
                     ),
                   ),

@@ -5,6 +5,7 @@ import '../core/constants/typography.dart';
 import '../core/constants/strings.dart';
 import '../providers/app_state_provider.dart';
 import '../core/services/printer_service.dart';
+import '../widgets/table_pagination.dart';
 
 class PinjamanScreen extends StatefulWidget {
   const PinjamanScreen({super.key});
@@ -24,6 +25,7 @@ class _PinjamanScreenState extends State<PinjamanScreen> {
   // Selected member for view history
   String? _viewAnggotaId;
   String _searchQueryView = '';
+  int _currentPage = 1;
 
   @override
   void dispose() {
@@ -70,7 +72,10 @@ class _PinjamanScreenState extends State<PinjamanScreen> {
                   const SizedBox(height: 8),
                   if (_viewAnggotaId == null) ...[
                     TextField(
-                      onChanged: (val) => setState(() => _searchQueryView = val),
+                      onChanged: (val) => setState(() {
+                        _searchQueryView = val;
+                        _currentPage = 1;
+                      }),
                       decoration: const InputDecoration(
                         hintText: 'Cari nama petani...',
                         prefixIcon: Icon(Icons.search),
@@ -97,6 +102,7 @@ class _PinjamanScreenState extends State<PinjamanScreen> {
                               onTap: () => setState(() {
                                 _viewAnggotaId = a.anggotaId;
                                 _searchQueryView = '';
+                                _currentPage = 1;
                               }),
                             );
                           },
@@ -116,7 +122,10 @@ class _PinjamanScreenState extends State<PinjamanScreen> {
                           ),
                           IconButton(
                             icon: const Icon(Icons.close, color: CarbonColors.error),
-                            onPressed: () => setState(() => _viewAnggotaId = null),
+                            onPressed: () => setState(() {
+                              _viewAnggotaId = null;
+                              _currentPage = 1;
+                            }),
                           ),
                         ],
                       ),
@@ -128,7 +137,117 @@ class _PinjamanScreenState extends State<PinjamanScreen> {
                   // History Log
                   Expanded(
                     child: _viewAnggotaId == null
-                        ? const Center(child: Text('Pilih petani untuk melihat histori pinjaman.'))
+                        ? FutureBuilder<List<Map<String, dynamic>>>(
+                            future: state.getAllPinjaman(),
+                            builder: (context, snapshot) {
+                              if (!snapshot.hasData) {
+                                return const Center(child: CircularProgressIndicator());
+                              }
+
+                              // Filter by search query if any
+                              final query = _searchQueryView.toLowerCase();
+                              final allLoans = snapshot.data!.where((loan) {
+                                final name = (loan['anggota_nama'] ?? '').toString().toLowerCase();
+                                final memberId = loan['anggota_id'].toString().toLowerCase();
+                                final loanId = loan['pinjaman_id'].toString().toLowerCase();
+                                return name.contains(query) || memberId.contains(query) || loanId.contains(query);
+                              }).toList();
+
+                              if (allLoans.isEmpty) {
+                                return const Center(child: Text('Tidak ada data pinjaman.'));
+                              }
+
+                              final int itemsPerPage = 10;
+                              final int totalItems = allLoans.length;
+                              final int totalPages = (totalItems / itemsPerPage).ceil();
+                              int page = _currentPage;
+                              if (page > totalPages && totalPages > 0) {
+                                page = totalPages;
+                              }
+                              final int startIndex = (page - 1) * itemsPerPage;
+                              final int endIndex = startIndex + itemsPerPage;
+                              final paginatedLoans = allLoans.sublist(
+                                startIndex,
+                                endIndex > totalItems ? totalItems : endIndex,
+                              );
+
+                              return Column(
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          'Semua Pinjaman Koperasi',
+                                          style: CarbonTypography.bodyEmphasis.copyWith(fontWeight: FontWeight.bold),
+                                        ),
+                                        Text(
+                                          'Total: ${allLoans.length} records',
+                                          style: CarbonTypography.caption,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const Divider(height: 1, color: CarbonColors.hairline),
+                                  Expanded(
+                                    child: Container(
+                                      decoration: BoxDecoration(border: Border.all(color: CarbonColors.hairline)),
+                                      child: ListView.separated(
+                                        itemCount: paginatedLoans.length,
+                                        separatorBuilder: (c, i) => const Divider(height: 1, color: CarbonColors.hairline),
+                                        itemBuilder: (c, idx) {
+                                          final l = paginatedLoans[idx];
+                                          final status = l['status'] as String;
+                                          final nama = l['anggota_nama'] ?? 'Tidak Diketahui';
+                                          return ListTile(
+                                            tileColor: CarbonColors.canvas,
+                                            title: Row(
+                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                              children: [
+                                                Text(
+                                                  '$nama (${l['anggota_id']})',
+                                                  style: const TextStyle(fontWeight: FontWeight.bold),
+                                                ),
+                                                Text(
+                                                  'ID: ${l['pinjaman_id']}',
+                                                  style: CarbonTypography.caption,
+                                                ),
+                                              ],
+                                            ),
+                                            subtitle: Text(
+                                              'Pinjam: ${l['tanggal_pinjam']} • Pokok: ${PrinterService.formatCurrency(l['jumlah_pokok'])} • Sisa: ${PrinterService.formatCurrency(l['saldo_sisa'])}\nKet: ${l['keterangan'] ?? '-'}'
+                                            ),
+                                            trailing: Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                              color: status == 'LUNAS' ? CarbonColors.success.withOpacity(0.1) : CarbonColors.warning.withOpacity(0.1),
+                                              child: Text(
+                                                status,
+                                                style: CarbonTypography.caption.copyWith(
+                                                  color: status == 'LUNAS' ? CarbonColors.success : CarbonColors.primary,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                  ),
+                                  TablePagination(
+                                    currentPage: page,
+                                    totalItems: totalItems,
+                                    itemsPerPage: itemsPerPage,
+                                    onPageChanged: (newPage) {
+                                      setState(() {
+                                        _currentPage = newPage;
+                                      });
+                                    },
+                                  ),
+                                ],
+                              );
+                            },
+                          )
                         : FutureBuilder<List<Map<String, dynamic>>>(
                             future: state.getHistoriPinjaman(_viewAnggotaId!),
                             builder: (context, snapshot) {
@@ -141,34 +260,64 @@ class _PinjamanScreenState extends State<PinjamanScreen> {
                                 return const Center(child: Text('Anggota ini tidak memiliki riwayat pinjaman.'));
                               }
 
-                              return Container(
-                                decoration: BoxDecoration(border: Border.all(color: CarbonColors.hairline)),
-                                child: ListView.separated(
-                                  itemCount: list.length,
-                                  separatorBuilder: (c, i) => const Divider(height: 1, color: CarbonColors.hairline),
-                                  itemBuilder: (c, idx) {
-                                    final l = list[idx];
-                                    final status = l['status'] as String;
-                                    return ListTile(
-                                      tileColor: CarbonColors.canvas,
-                                      title: Text('Pinjaman ID: ${l['pinjaman_id']}'),
-                                      subtitle: Text(
-                                        'Pinjam: ${l['tanggal_pinjam']} • ${l['keterangan'] ?? ''}\nSisa Saldo: ${PrinterService.formatCurrency(l['saldo_sisa'])}'
+                              final int itemsPerPage = 10;
+                              final int totalItems = list.length;
+                              final int totalPages = (totalItems / itemsPerPage).ceil();
+                              int page = _currentPage;
+                              if (page > totalPages && totalPages > 0) {
+                                page = totalPages;
+                              }
+                              final int startIndex = (page - 1) * itemsPerPage;
+                              final int endIndex = startIndex + itemsPerPage;
+                              final paginatedList = list.sublist(
+                                startIndex,
+                                endIndex > totalItems ? totalItems : endIndex,
+                              );
+
+                              return Column(
+                                children: [
+                                  Expanded(
+                                    child: Container(
+                                      decoration: BoxDecoration(border: Border.all(color: CarbonColors.hairline)),
+                                      child: ListView.separated(
+                                        itemCount: paginatedList.length,
+                                        separatorBuilder: (c, i) => const Divider(height: 1, color: CarbonColors.hairline),
+                                        itemBuilder: (c, idx) {
+                                          final l = paginatedList[idx];
+                                          final status = l['status'] as String;
+                                          return ListTile(
+                                            tileColor: CarbonColors.canvas,
+                                            title: Text('Pinjaman ID: ${l['pinjaman_id']}'),
+                                            subtitle: Text(
+                                              'Pinjam: ${l['tanggal_pinjam']} • ${l['keterangan'] ?? ''}\nSisa Saldo: ${PrinterService.formatCurrency(l['saldo_sisa'])}'
+                                            ),
+                                            trailing: Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                              color: status == 'LUNAS' ? CarbonColors.success.withOpacity(0.1) : CarbonColors.warning.withOpacity(0.1),
+                                              child: Text(
+                                                status,
+                                                style: CarbonTypography.caption.copyWith(
+                                                  color: status == 'LUNAS' ? CarbonColors.success : CarbonColors.primary,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ),
+                                          );
+                                        },
                                       ),
-                                      trailing: Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                        color: status == 'LUNAS' ? CarbonColors.success.withOpacity(0.1) : CarbonColors.warning.withOpacity(0.1),
-                                        child: Text(
-                                          status,
-                                          style: CarbonTypography.caption.copyWith(
-                                            color: status == 'LUNAS' ? CarbonColors.success : CarbonColors.primary,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                ),
+                                    ),
+                                  ),
+                                  TablePagination(
+                                    currentPage: page,
+                                    totalItems: totalItems,
+                                    itemsPerPage: itemsPerPage,
+                                    onPageChanged: (newPage) {
+                                      setState(() {
+                                        _currentPage = newPage;
+                                      });
+                                    },
+                                  ),
+                                ],
                               );
                             },
                           ),

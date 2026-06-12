@@ -8,6 +8,7 @@ import '../core/services/printer_service.dart';
 import '../core/services/export_service.dart';
 import '../core/services/kalkulasi_service.dart';
 import '../core/database/database_helper.dart';
+import '../widgets/table_pagination.dart';
 
 class LaporanScreen extends StatefulWidget {
   const LaporanScreen({super.key});
@@ -20,6 +21,7 @@ class _LaporanScreenState extends State<LaporanScreen> {
   String _searchFilter = '';
   List<Map<String, dynamic>> _allTransactions = [];
   bool _isLoading = false;
+  int _currentPage = 1;
 
   @override
   void initState() {
@@ -156,7 +158,10 @@ class _LaporanScreenState extends State<LaporanScreen> {
               children: [
                 Expanded(
                   child: TextField(
-                    onChanged: (val) => setState(() => _searchFilter = val),
+                    onChanged: (val) => setState(() {
+                      _searchFilter = val;
+                      _currentPage = 1;
+                    }),
                     decoration: const InputDecoration(
                       hintText: 'Cari transaksi berdasarkan nama, ID anggota, atau nomor struk...',
                       prefixIcon: Icon(Icons.search),
@@ -198,64 +203,118 @@ class _LaporanScreenState extends State<LaporanScreen> {
                     ? const Center(child: CircularProgressIndicator())
                     : filtered.isEmpty
                         ? const Center(child: Text('Tidak ada data transaksi yang cocok.'))
-                        : ListView.separated(
-                            itemCount: filtered.length,
-                            separatorBuilder: (c, i) => const Divider(height: 1, color: CarbonColors.hairline),
-                            itemBuilder: (c, idx) {
-                              final tx = filtered[idx];
-                              final isVoid = tx['is_void'] == 1;
+                        : Column(
+                            children: [
+                              Expanded(
+                                child: ListView.separated(
+                                  itemCount: () {
+                                    final int itemsPerPage = 10;
+                                    final int totalItems = filtered.length;
+                                    final int totalPages = (totalItems / itemsPerPage).ceil();
+                                    int page = _currentPage;
+                                    if (page > totalPages && totalPages > 0) {
+                                      page = totalPages;
+                                    }
+                                    final int startIndex = (page - 1) * itemsPerPage;
+                                    final int endIndex = startIndex + itemsPerPage;
+                                    final paginatedList = filtered.sublist(
+                                      startIndex,
+                                      endIndex > totalItems ? totalItems : endIndex,
+                                    );
+                                    return paginatedList.length;
+                                  }(),
+                                  separatorBuilder: (c, i) => const Divider(height: 1, color: CarbonColors.hairline),
+                                  itemBuilder: (c, idx) {
+                                    final int itemsPerPage = 10;
+                                    final int totalItems = filtered.length;
+                                    final int totalPages = (totalItems / itemsPerPage).ceil();
+                                    int page = _currentPage;
+                                    if (page > totalPages && totalPages > 0) {
+                                      page = totalPages;
+                                    }
+                                    final int startIndex = (page - 1) * itemsPerPage;
+                                    final int endIndex = startIndex + itemsPerPage;
+                                    final paginatedList = filtered.sublist(
+                                      startIndex,
+                                      endIndex > totalItems ? totalItems : endIndex,
+                                    );
+                                    
+                                    final tx = paginatedList[idx];
+                                    final isVoid = tx['is_void'] == 1;
 
-                              return ListTile(
-                                tileColor: isVoid ? CarbonColors.surface1 : CarbonColors.canvas,
-                                title: Row(
-                                  children: [
-                                    Text(
-                                      '${tx['anggota_nama'] ?? tx['anggota_id']}',
-                                      style: TextStyle(
-                                        decoration: isVoid ? TextDecoration.lineThrough : null,
-                                        fontWeight: FontWeight.bold,
+                                    return ListTile(
+                                      tileColor: isVoid ? CarbonColors.surface1 : CarbonColors.canvas,
+                                      title: Row(
+                                        children: [
+                                          Text(
+                                            '${tx['anggota_nama'] ?? tx['anggota_id']}',
+                                            style: TextStyle(
+                                              decoration: isVoid ? TextDecoration.lineThrough : null,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          if (isVoid) ...[
+                                            const SizedBox(width: 12),
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                              color: CarbonColors.error.withOpacity(0.1),
+                                              child: const Text(
+                                                'VOID',
+                                                style: TextStyle(color: CarbonColors.error, fontSize: 10, fontWeight: FontWeight.bold),
+                                              ),
+                                            ),
+                                          ]
+                                        ],
                                       ),
-                                    ),
-                                    if (isVoid) ...[
-                                      const SizedBox(width: 12),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                        color: CarbonColors.error.withOpacity(0.1),
-                                        child: const Text(
-                                          'VOID',
-                                          style: TextStyle(color: CarbonColors.error, fontSize: 10, fontWeight: FontWeight.bold),
-                                        ),
+                                      subtitle: Text(
+                                        'Struk: ${tx['no_struk']} • Tanggal Sesi: ${tx['tanggal'] ?? tx['sesi_id']} • Berat: ${tx['berat_kg']} Kg\nPotongan: Adm (${PrinterService.formatCurrency(tx['biaya_adm'] ?? 0)}) | TRS (${PrinterService.formatCurrency(tx['biaya_trs'] ?? 0)}) | Pinjaman (${PrinterService.formatCurrency(tx['pinjaman_dipotong'])})'
                                       ),
-                                    ]
-                                  ],
+                                      trailing: Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        crossAxisAlignment: CrossAxisAlignment.end,
+                                        children: [
+                                          Text(
+                                            PrinterService.formatCurrency(tx['jumlah_disetor'] ?? 0),
+                                            style: CarbonTypography.bodyEmphasis.copyWith(
+                                              decoration: isVoid ? TextDecoration.lineThrough : null,
+                                            ),
+                                          ),
+                                          if (!isVoid) ...[
+                                            const SizedBox(height: 4),
+                                            InkWell(
+                                              onTap: () => _confirmVoid(context, tx['transaksi_id']),
+                                              child: const Text(
+                                                'Batalkan (Void)',
+                                                style: TextStyle(color: CarbonColors.error, fontSize: 11, fontWeight: FontWeight.bold),
+                                              ),
+                                            ),
+                                          ],
+                                        ],
+                                      ),
+                                    );
+                                  },
                                 ),
-                                subtitle: Text(
-                                  'Struk: ${tx['no_struk']} • Tanggal Sesi: ${tx['tanggal'] ?? tx['sesi_id']} • Berat: ${tx['berat_kg']} Kg\nPotongan: Adm (${PrinterService.formatCurrency(tx['biaya_adm'] ?? 0)}) | TRS (${PrinterService.formatCurrency(tx['biaya_trs'] ?? 0)}) | Pinjaman (${PrinterService.formatCurrency(tx['pinjaman_dipotong'])})'
-                                ),
-                                trailing: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: [
-                                    Text(
-                                      PrinterService.formatCurrency(tx['jumlah_disetor'] ?? 0),
-                                      style: CarbonTypography.bodyEmphasis.copyWith(
-                                        decoration: isVoid ? TextDecoration.lineThrough : null,
-                                      ),
-                                    ),
-                                    if (!isVoid) ...[
-                                      const SizedBox(height: 4),
-                                      InkWell(
-                                        onTap: () => _confirmVoid(context, tx['transaksi_id']),
-                                        child: const Text(
-                                          'Batalkan (Void)',
-                                          style: TextStyle(color: CarbonColors.error, fontSize: 11, fontWeight: FontWeight.bold),
-                                        ),
-                                      ),
-                                    ],
-                                  ],
-                                ),
-                              );
-                            },
+                              ),
+                              TablePagination(
+                                currentPage: () {
+                                  final int itemsPerPage = 10;
+                                  final int totalItems = filtered.length;
+                                  final int totalPages = (totalItems / itemsPerPage).ceil();
+                                  int page = _currentPage;
+                                  if (page > totalPages && totalPages > 0) {
+                                    page = totalPages;
+                                  }
+                                  return page;
+                                }(),
+                                totalItems: filtered.length,
+                                itemsPerPage: 10,
+                                onPageChanged: (newPage) {
+                                  setState(() {
+                                    _currentPage = newPage;
+                                  });
+                                },
+                              ),
+                            ],
                           ),
               ),
             ),
