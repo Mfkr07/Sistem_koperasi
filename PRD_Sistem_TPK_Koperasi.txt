@@ -1,0 +1,1145 @@
+================================================================================
+PRODUCT REQUIREMENTS DOCUMENT (PRD)
+Aplikasi Desktop Offline - Sistem Pencatatan Transaksi TPK Koperasi Sawit
+================================================================================
+Versi Dokumen  : 1.1.0
+Tanggal        : Juni 2026
+Sumber Data    : 01_APRIL_2026.xls
+Status         : Draft untuk Review
+================================================================================
+
+
+--------------------------------------------------------------------------------
+DAFTAR ISI
+--------------------------------------------------------------------------------
+1.  Ringkasan Produk
+2.  Latar Belakang & Konteks Bisnis
+3.  Tujuan & Ruang Lingkup
+4.  Pengguna (User)
+5.  Platform & Tech Stack
+6.  Fitur Utama (Feature List)
+7.  Flow Sistem
+    7.1  Siklus Operasional Harian (Overview)
+    7.2  Flow A: Buka Sesi Timbang
+    7.3  Flow B: Input Timbangan Per Petani
+    7.4  Flow C: Tutup Sesi & Rekap
+    7.5  Flow D: Manajemen Pinjaman
+    7.6  Flow E: Laporan & Export
+8.  Spesifikasi Fungsional
+    8.1  Modul Anggota
+    8.2  Modul Sesi Timbang
+    8.3  Modul Transaksi
+    8.4  Modul Pinjaman
+    8.5  Modul Pengeluaran
+    8.6  Modul Laporan & Export
+    8.7  Modul Printer Thermal
+    8.8  Modul Pengaturan
+9.  Aturan Bisnis & Formula Kalkulasi
+10. Validasi & Penanganan Error
+11. Skema Database (Normalisasi 3NF)
+12. Desain Struk Thermal
+13. Spesifikasi Export Data
+14. Spesifikasi Non-Fungsional
+15. Arsitektur Aplikasi Flutter
+
+
+================================================================================
+1. RINGKASAN PRODUK
+================================================================================
+
+Aplikasi desktop offline berbasis Flutter untuk Windows yang digunakan oleh
+satu orang pengurus koperasi sawit (TPK) guna mencatat seluruh transaksi
+timbangan harian, mengelola pinjaman anggota, mencetak struk thermal, serta
+menghasilkan laporan dan rekap yang dapat diekspor ke Excel, PDF, USB, maupun
+folder lokal.
+
+Aplikasi berjalan sepenuhnya tanpa koneksi internet. Seluruh data tersimpan
+lokal menggunakan SQLite. Tidak ada mekanisme login; aplikasi langsung terbuka
+dan siap digunakan oleh pengurus.
+
+
+================================================================================
+2. LATAR BELAKANG & KONTEKS BISNIS
+================================================================================
+
+Koperasi ini mengelola kegiatan timbang sawit harian yang melibatkan lebih dari
+115 petani anggota yang dibagi ke dalam dua koordinator (Alek dan Yudi).
+Setiap hari timbang, pengurus mencatat berat sawit tiap petani, menghitung
+potongan (administrasi, transportasi, pinjaman), dan menyetor selisihnya kepada
+petani. Di akhir sesi, pengurus juga mencatat pengeluaran seperti fee tenaga
+kerja, biaya truck, KUD, jaga malam, dan kas TPK.
+
+Selama ini pencatatan dilakukan secara manual di Excel dengan format flat
+(satu baris per petani) yang rentan kesalahan hitung, tidak memiliki histori
+pinjaman yang terstruktur, dan tidak dapat mencetak struk langsung untuk
+petani.
+
+Sistem ini dibuat untuk menggantikan proses manual tersebut dengan aplikasi
+yang terstruktur, akurat, dan mampu mencetak struk thermal pada setiap
+transaksi.
+
+
+================================================================================
+3. TUJUAN & RUANG LINGKUP
+================================================================================
+
+Tujuan:
+- Mendigitalisasi pencatatan timbangan harian secara akurat dan cepat.
+- Mengelola saldo pinjaman anggota dengan histori yang jelas.
+- Mencetak struk thermal per transaksi sebagai bukti bagi petani.
+- Menghasilkan rekap dan laporan harian yang dapat diekspor.
+- Menyediakan backup data yang mudah ke USB atau folder.
+
+Dalam Ruang Lingkup:
+- Pencatatan sesi timbang harian.
+- Manajemen data master anggota dan koordinator.
+- Manajemen pinjaman anggota (tambah, potong, histori).
+- Kalkulasi otomatis semua nilai turunan (ADM, TRS, HARGA, DISETOR).
+- Cetak struk thermal per transaksi (USB dan Bluetooth).
+- Cetak ulang struk berdasarkan nomor struk.
+- Pencatatan pengeluaran sesi (KUD, fee, truck, dll).
+- Rekap harian dan laporan per anggota.
+- Export laporan ke Excel (.xlsx) dan PDF.
+- Backup database ke USB atau folder lokal.
+- Penanganan kepemilikan lahan bersama (dua nama per transaksi).
+- Pembatalan (void) transaksi dalam sesi yang sama.
+
+Di Luar Ruang Lingkup:
+- Sinkronisasi cloud atau akses jaringan.
+- Manajemen multi-pengguna atau sistem hak akses.
+- Akuntansi lanjutan atau pembukuan koperasi penuh.
+- Aplikasi mobile.
+
+
+================================================================================
+4. PENGGUNA (USER)
+================================================================================
+
+Pengguna        : 1 (satu) orang pengurus koperasi TPK
+Peran           : Pengurus merangkap operator - menjalankan semua fungsi
+                  aplikasi secara mandiri
+Tingkat Teknis  : Pengguna awam, terbiasa dengan Excel dan komputer dasar
+Perangkat       : Laptop Windows (Windows 10 atau Windows 11)
+Pola Penggunaan : Harian, setiap hari timbang sawit
+
+Tidak ada mekanisme login, autentikasi, atau manajemen hak akses.
+Aplikasi langsung terbuka ke halaman utama saat dijalankan.
+
+
+================================================================================
+5. PLATFORM & TECH STACK
+================================================================================
+
+Platform Target   : Windows Desktop (Windows 10 / Windows 11, 64-bit)
+Framework UI      : Flutter (Desktop - Windows)
+Database Lokal    : SQLite (via paket drift atau sqflite_common_ffi)
+Bahasa            : Dart
+Cetak Thermal     : Paket flutter_thermal_printer atau integrasi ESC/POS
+                    via USB (dart:ffi / win32) dan Bluetooth
+Export Excel      : Paket excel (pub.dev)
+Export PDF        : Paket pdf (pub.dev)
+File Backup       : File copy SQLite (.db) ke path yang dipilih pengguna
+State Management  : Provider atau Riverpod
+
+Spesifikasi Minimum Hardware:
+- OS       : Windows 10 64-bit
+- RAM      : 2 GB
+- Storage  : 500 MB ruang kosong
+- Port     : USB-A (untuk printer dan backup USB)
+- Bluetooth: Opsional (untuk printer Bluetooth)
+
+Distribusi:
+- Aplikasi didistribusikan sebagai installer .exe (NSIS atau Inno Setup)
+  yang dapat dijalankan tanpa koneksi internet.
+
+
+================================================================================
+6. FITUR UTAMA (FEATURE LIST)
+================================================================================
+
+F-01  Manajemen Data Anggota
+      Tambah, edit, nonaktifkan data petani anggota beserta koordinator
+      dan jenis angkutan defaultnya.
+
+F-02  Buka dan Tutup Sesi Timbang
+      Membuat sesi harian baru dengan tanggal, koordinator, harga per Kg,
+      tarif ADM, dan tarif TRS. Menutup sesi setelah semua transaksi selesai.
+
+F-03  Input Transaksi Timbangan
+      Mencatat berat sawit per petani dengan kalkulasi otomatis semua
+      nilai turunan secara real-time.
+
+F-04  Manajemen Pinjaman Anggota
+      Mencatat pinjaman baru dan memotong saldo pinjaman secara otomatis
+      saat transaksi timbang. Status LUNAS otomatis saat saldo nol.
+
+F-05  Cetak Struk Thermal
+      Mencetak struk per transaksi ke printer thermal (USB atau Bluetooth,
+      58mm atau 80mm). Mendukung cetak ulang berdasarkan nomor struk.
+
+F-06  Pencatatan Pengeluaran Sesi
+      Mencatat semua biaya operasional per sesi: KUD, fee tenaga kerja,
+      truck, jaga malam, kas TPK, dan lain-lain.
+
+F-07  Rekap dan Laporan Harian
+      Menampilkan ringkasan sesi: total tonase, total bruto, total potongan,
+      total disetor, total pengeluaran, dan saldo kas bersih.
+
+F-08  Laporan Per Anggota
+      Menampilkan histori timbang, akumulasi setoran, dan riwayat pinjaman
+      untuk satu anggota tertentu.
+
+F-09  Rekap Global Multi-Sesi
+      Menampilkan akumulasi tonase dan nilai per anggota lintas sesi dalam
+      rentang tanggal tertentu.
+
+F-10  Export Laporan
+      Mengekspor laporan ke format Excel (.xlsx) dan PDF. Menyimpan ke
+      folder yang dipilih pengguna atau langsung ke USB.
+
+F-11  Backup Database
+      Menyalin file database SQLite ke folder atau USB yang dipilih
+      pengguna. Backup otomatis dipicu saat sesi ditutup.
+
+F-12  Kepemilikan Bersama
+      Mendukung transaksi dengan dua pemilik lahan (misal: NANDA/ASWADI)
+      dengan pembagian porsi persentase dan struk terpisah per pemilik.
+
+F-13  Pembatalan Transaksi
+      Membatalkan (void) transaksi dalam sesi yang sama dengan rollback
+      saldo pinjaman dan cetak struk pembatalan.
+
+F-14  Pengaturan Aplikasi
+      Mengatur nama koperasi, data koordinator, dan path default backup.
+
+
+================================================================================
+7. FLOW SISTEM
+================================================================================
+
+------------------------------------------------------------------------
+7.1  SIKLUS OPERASIONAL HARIAN (OVERVIEW)
+------------------------------------------------------------------------
+
+Setiap hari timbang, pengurus menjalankan tiga fase secara berurutan:
+
+    [FASE A: BUKA SESI]
+           |
+           v
+    [FASE B: INPUT TIMBANGAN] <-- diulang untuk setiap petani
+           |
+           v
+    [FASE C: TUTUP SESI & REKAP]
+
+Di luar siklus harian, pengurus dapat sewaktu-waktu menjalankan:
+- Manajemen Pinjaman (Flow D)
+- Cetak / Export Laporan (Flow E)
+- Manajemen Anggota
+- Pengaturan
+
+------------------------------------------------------------------------
+7.2  FLOW A: BUKA SESI TIMBANG
+------------------------------------------------------------------------
+
+Dilakukan SATU KALI sebelum mulai mencatat timbangan hari itu.
+
+  LANGKAH 1 - Buka Aplikasi
+    Pengurus membuka aplikasi. Layar utama tampil.
+    Sistem cek apakah ada sesi BUKA untuk hari ini.
+      -> Jika ada: tampilkan notifikasi "Sesi hari ini sudah aktif",
+         langsung masuk ke form timbang.
+      -> Jika tidak ada: tampilkan tombol "Buka Sesi Baru".
+
+  LANGKAH 2 - Buat Sesi Baru
+    Pengurus menekan "Buka Sesi Baru". Form sesi tampil dengan:
+    - Tanggal (auto-isi tanggal hari ini, bisa diubah)
+    - Pilih koordinator: Alek / Yudi
+    - Harga per Kg (default dari sesi terakhir, bisa diubah)
+    - Tarif ADM per Kg (default dari sesi terakhir)
+    - Tarif TRS Dusun per Kg (default dari sesi terakhir)
+    - Tarif TRS Ibol per Kg (default dari sesi terakhir)
+
+  LANGKAH 3 - Konfirmasi & Simpan
+    Pengurus menekan "Buka Sesi".
+    Sistem INSERT ke tabel sesi_timbang dengan status = BUKA.
+    Layar berpindah ke form input timbangan.
+
+    DB yang dipengaruhi: sesi_timbang (INSERT)
+
+------------------------------------------------------------------------
+7.3  FLOW B: INPUT TIMBANGAN PER PETANI
+------------------------------------------------------------------------
+
+Diulang untuk SETIAP petani yang menimbang hari itu.
+
+  LANGKAH 1 - Cari dan Pilih Anggota
+    Pengurus mengetik nama atau memilih dari daftar dropdown.
+    Sistem menampilkan:
+    - Nama lengkap anggota
+    - Koordinator yang menaungi
+    - Jenis angkutan default (SENDIRI / DUSUN / IBOL)
+    - Saldo pinjaman aktif (jumlah total dari semua pinjaman AKTIF)
+    Jika anggota sudah pernah timbang di sesi ini, tampilkan peringatan
+    "Anggota sudah timbang hari ini. Lanjutkan?"
+
+    DB yang diakses: anggota (SELECT), pinjaman (SELECT SUM saldo_sisa)
+
+  LANGKAH 2 - Input Berat
+    Pengurus memasukkan angka berat (Kg) dari hasil timbangan.
+    Saat nilai berubah, sistem langsung hitung dan tampilkan preview:
+    - HARGA BRUTO  = berat_kg x harga_per_kg
+    - BIAYA ADM    = berat_kg x tarif_adm_per_kg
+
+  LANGKAH 3 - Konfirmasi Jenis Angkutan
+    Jenis angkutan terisi otomatis dari data default anggota.
+    Pengurus dapat mengubah jika berbeda hari ini.
+    Sistem hitung otomatis:
+    - BIAYA TRS    = berat_kg x tarif_trs (sesuai jenis angkutan)
+    - SENDIRI      = Rp 0
+
+  LANGKAH 4 - Input Potongan Pinjaman
+    Jika saldo pinjaman aktif > 0:
+      - Field pinjaman aktif dengan nilai default 0.
+      - Pengurus input nominal yang akan dipotong.
+      - Sistem validasi: nominal dipotong tidak boleh melebihi saldo aktif.
+      - Jika melebihi, tampilkan pesan error dan blokir.
+    Jika saldo pinjaman = 0:
+      - Field pinjaman dinonaktifkan (readonly, nilai 0).
+
+  LANGKAH 5 - Kalkulasi Final (Otomatis, Real-time)
+    Sistem hitung dan tampilkan semua nilai secara real-time:
+    - TOTAL POTONGAN  = ADM + TRS + pinjaman_dipotong
+    - JUMLAH DISETOR  = HARGA BRUTO - TOTAL POTONGAN
+    Validasi: JUMLAH DISETOR tidak boleh bernilai negatif.
+    Jika negatif, tampilkan peringatan merah dan blokir tombol SIMPAN.
+
+  LANGKAH 6 - Konfirmasi dan Simpan
+    Pengurus menekan "SIMPAN".
+    Sistem melakukan:
+    a. INSERT ke tabel transaksi dengan berat_kg dan pinjaman_dipotong.
+       (Nilai ADM, TRS, HARGA, DISETOR TIDAK disimpan - dihitung saat query)
+    b. Generate nomor struk: STR-[YYYYMMDD]-[urutan 3 digit], misal
+       STR-20260401-042.
+    c. UPDATE saldo_sisa pinjaman:
+       saldo_baru = saldo_lama - pinjaman_dipotong
+       Jika saldo_baru = 0, UPDATE status pinjaman menjadi LUNAS.
+    d. Tampilkan konfirmasi sukses.
+
+    DB yang dipengaruhi: transaksi (INSERT), pinjaman (UPDATE)
+
+  LANGKAH 7 - Cetak Struk Thermal
+    Setelah simpan, muncul dialog "Cetak struk sekarang?"
+    Jika ya:
+      - Sistem render template struk ESC/POS.
+      - Kirim perintah ke printer yang terhubung (USB atau Bluetooth).
+      - UPDATE transaksi.sudah_cetak = true dan isi waktu_cetak.
+    Jika tidak / printer tidak terhubung:
+      - Data tersimpan, transaksi.sudah_cetak tetap false.
+      - Dapat dicetak ulang nanti dari menu "Cetak Ulang".
+
+  LANGKAH 8 - Lanjut Petani Berikutnya
+    Form direset, kembali ke Langkah 1 untuk petani berikutnya.
+
+  [KASUS KHUSUS: KEPEMILIKAN BERSAMA]
+    Jika satu bidang lahan dimiliki dua petani (misal: NANDA/ASWADI):
+    - Pengurus centang "Kepemilikan Bersama" di form.
+    - Pilih dua anggota dan isi persentase masing-masing (total harus 100%).
+    - Sistem INSERT satu transaksi utama dan dua baris kepemilikan_bersama.
+    - Sistem cetak dua struk terpisah (satu per pemilik) dengan nilai
+      disetor masing-masing sesuai porsi persentase.
+
+------------------------------------------------------------------------
+7.4  FLOW C: TUTUP SESI & REKAP
+------------------------------------------------------------------------
+
+Dilakukan SATU KALI setelah semua petani selesai ditimbang.
+
+  LANGKAH 1 - Input Pengeluaran Sesi
+    Sebelum menutup sesi, pengurus mencatat semua pengeluaran:
+    - KUD
+    - Iuran anggota
+    - Fee tenaga kerja (per nama penerima dan jumlah)
+    - Biaya jaga malam
+    - Biaya truck / angkutan
+    - Kas TPK
+    - Lain-lain
+    Setiap item INSERT ke tabel pengeluaran dengan sesi_id yang aktif.
+
+  LANGKAH 2 - Lihat Rekap Harian
+    Sistem otomatis hitung dan tampilkan ringkasan sesi:
+    - Total anggota yang timbang
+    - Total tonase (SUM berat_kg)
+    - Total harga bruto (SUM berat_kg x harga_per_kg)
+    - Total biaya ADM (SUM berat_kg x tarif_adm)
+    - Total biaya TRS (SUM berat_kg x tarif_trs)
+    - Total pinjaman dipotong (SUM pinjaman_dipotong)
+    - Total disetor ke petani
+    - Total pengeluaran sesi (SUM pengeluaran.jumlah)
+    - Saldo kas bersih
+
+  LANGKAH 3 - Cetak atau Export Rekap
+    Pilihan output rekap harian:
+    a. Cetak ke printer thermal (struk panjang)
+    b. Export ke Excel (.xlsx) - simpan ke folder atau USB
+    c. Export ke PDF - simpan ke folder atau USB
+    d. Hanya tampil di layar
+
+  LANGKAH 4 - Tutup Sesi
+    Pengurus menekan "Tutup Sesi".
+    Konfirmasi dialog: "Yakin menutup sesi? Transaksi baru tidak dapat
+    ditambahkan setelah sesi ditutup."
+    Jika dikonfirmasi:
+    - UPDATE sesi_timbang.status = TUTUP.
+    - Sistem otomatis backup file SQLite ke path backup yang telah
+      dikonfigurasi (USB atau folder). Nama file: db_YYYYMMDD.sqlite.
+    - Tampilkan notifikasi "Sesi ditutup. Backup berhasil disimpan di [path]."
+
+    DB yang dipengaruhi: sesi_timbang (UPDATE status)
+
+------------------------------------------------------------------------
+7.5  FLOW D: MANAJEMEN PINJAMAN
+------------------------------------------------------------------------
+
+Dapat dilakukan kapan saja, tidak bergantung pada sesi timbang.
+
+  ALUR D1: TAMBAH PINJAMAN BARU
+    1. Pengurus buka menu Pinjaman.
+    2. Pilih anggota dari daftar.
+    3. Sistem tampilkan saldo pinjaman aktif yang sudah ada.
+    4. Pengurus input jumlah pokok pinjaman baru dan keterangan.
+    5. Konfirmasi dan simpan.
+    6. Sistem INSERT ke tabel pinjaman dengan status = AKTIF dan
+       saldo_sisa = jumlah_pokok.
+
+    DB yang dipengaruhi: pinjaman (INSERT)
+
+  ALUR D2: POTONGAN PINJAMAN (otomatis saat timbang - lihat Flow B)
+
+  ALUR D3: LIHAT HISTORI PINJAMAN ANGGOTA
+    1. Pilih anggota.
+    2. Sistem tampilkan daftar semua pinjaman (AKTIF dan LUNAS).
+    3. Tampilkan detail: tanggal pinjam, pokok, saldo sisa, status.
+
+  STATE MACHINE PINJAMAN:
+    [tidak ada] --[tambah pinjaman baru]--> [AKTIF]
+    [AKTIF]     --[dipotong sebagian]-----> [AKTIF] (saldo berkurang)
+    [AKTIF]     --[saldo = 0]-------------> [LUNAS] (otomatis)
+    [LUNAS]     --[tidak bisa diubah]-----> [LUNAS] (read-only histori)
+
+  Catatan: Satu anggota bisa memiliki lebih dari satu pinjaman AKTIF.
+  Pemotongan dilakukan secara FIFO (pinjaman terlama dipotong lebih dulu)
+  secara otomatis, atau pengurus dapat memilih pinjaman mana yang dipotong.
+
+------------------------------------------------------------------------
+7.6  FLOW E: LAPORAN & EXPORT
+------------------------------------------------------------------------
+
+Jenis laporan yang tersedia:
+
+  E1 - STRUK TRANSAKSI
+    Trigger  : Otomatis setelah simpan timbangan
+    Format   : Thermal 58mm atau 80mm (ESC/POS)
+    Tujuan   : Diberikan langsung ke petani
+
+  E2 - REKAP HARIAN
+    Trigger  : Saat tutup sesi atau request manual
+    Format   : Thermal (cetak), Excel (.xlsx), PDF
+    Tujuan   : Arsip pengurus dan koperasi
+    Isi      : Semua transaksi sesi, total, pengeluaran, saldo kas
+
+  E3 - LAPORAN PER ANGGOTA
+    Trigger  : Request manual, pilih anggota dan rentang tanggal
+    Format   : Layar, PDF, Excel
+    Tujuan   : Rekap histori petani, kontrol pinjaman
+    Isi      : Histori timbang, akumulasi setoran, riwayat pinjaman
+
+  E4 - LAPORAN PINJAMAN
+    Trigger  : Request manual
+    Format   : Layar, Excel, PDF
+    Tujuan   : Monitoring piutang koperasi
+    Isi      : Semua pinjaman AKTIF beserta saldo sisa per anggota
+
+  E5 - LAPORAN PENGELUARAN
+    Trigger  : Request manual atau saat tutup sesi
+    Format   : Layar, PDF
+    Tujuan   : Keuangan operasional koperasi
+    Isi      : Detail biaya per kategori per sesi
+
+  E6 - REKAP GLOBAL MULTI-SESI
+    Trigger  : Request manual, pilih rentang tanggal
+    Format   : Layar, Excel
+    Tujuan   : Perbandingan kinerja lintas periode
+    Isi      : Akumulasi tonase dan nilai per petani
+
+  ALUR EXPORT:
+    1. Pengurus pilih jenis laporan dan parameter (tanggal, anggota, dll).
+    2. Sistem generate data dari query SQLite.
+    3. Pengurus pilih format: Excel / PDF / Cetak.
+    4. Dialog "Simpan ke" muncul: pilih folder atau drive USB.
+    5. Sistem simpan file dengan nama otomatis:
+       - Excel: Rekap_Harian_YYYYMMDD.xlsx
+       - PDF  : Rekap_Harian_YYYYMMDD.pdf
+
+
+================================================================================
+8. SPESIFIKASI FUNGSIONAL
+================================================================================
+
+------------------------------------------------------------------------
+8.1  MODUL ANGGOTA
+------------------------------------------------------------------------
+
+FR-ANK-01  Tambah anggota baru dengan field: nama, koordinator, jenis
+           angkutan default (SENDIRI/DUSUN/IBOL), nomor HP (opsional).
+FR-ANK-02  Edit data anggota yang sudah ada.
+FR-ANK-03  Nonaktifkan anggota (soft delete, data historis tetap tersimpan).
+FR-ANK-04  Cari anggota by nama (partial match, case-insensitive).
+FR-ANK-05  Tampilkan daftar anggota dengan filter: semua / aktif / nonaktif.
+FR-ANK-06  Tampilkan saldo pinjaman aktif di daftar anggota.
+FR-ANK-07  Mendukung dua nama dalam satu anggota untuk kepemilikan bersama.
+
+------------------------------------------------------------------------
+8.2  MODUL SESI TIMBANG
+------------------------------------------------------------------------
+
+FR-SESI-01  Buat sesi baru dengan tanggal, koordinator, harga per Kg,
+            tarif ADM, tarif TRS Dusun, tarif TRS Ibol.
+FR-SESI-02  Nilai default tarif dan harga diambil dari sesi terakhir.
+FR-SESI-03  Hanya boleh ada satu sesi berstatus BUKA pada satu waktu.
+FR-SESI-04  Tutup sesi mengubah status menjadi TUTUP dan memicu backup otomatis.
+FR-SESI-05  Setelah sesi TUTUP, tidak dapat menambah transaksi ke sesi tersebut.
+FR-SESI-06  Tampilkan histori sesi yang lalu (tanggal, total tonase, status).
+
+------------------------------------------------------------------------
+8.3  MODUL TRANSAKSI
+------------------------------------------------------------------------
+
+FR-TRX-01  Input transaksi hanya bisa dilakukan dalam sesi berstatus BUKA.
+FR-TRX-02  Pilih anggota dengan fitur pencarian.
+FR-TRX-03  Input berat Kg (numerik, tidak boleh nol atau negatif).
+FR-TRX-04  Preview kalkulasi real-time saat pengguna mengetik berat.
+FR-TRX-05  Pilih jenis angkutan (default dari data anggota, bisa diubah).
+FR-TRX-06  Input pinjaman dipotong (default 0, tidak boleh melebihi saldo aktif).
+FR-TRX-07  Tombol SIMPAN hanya aktif jika semua validasi lulus.
+FR-TRX-08  Nilai ADM, TRS, HARGA BRUTO, dan JUMLAH DISETOR tidak disimpan
+           di database; selalu dihitung ulang dari data mentah saat diperlukan.
+FR-TRX-09  Generate nomor struk unik format STR-YYYYMMDD-NNN.
+FR-TRX-10  Tandai transaksi sudah_cetak setelah printer berhasil mencetak.
+FR-TRX-11  Tampilkan daftar transaksi belum cetak untuk cetak ulang.
+FR-TRX-12  Void (batalkan) transaksi dalam sesi yang sama dengan konfirmasi.
+           Transaksi di-flag void=true, tidak dihapus dari database.
+           Saldo pinjaman di-rollback sesuai nilai pinjaman_dipotong semula.
+
+------------------------------------------------------------------------
+8.4  MODUL PINJAMAN
+------------------------------------------------------------------------
+
+FR-PIN-01  Tambah pinjaman baru kapan saja (tidak perlu sesi aktif).
+FR-PIN-02  Tampilkan total saldo aktif anggota saat dipilih di form timbang.
+FR-PIN-03  Potongan pinjaman saat timbang tidak boleh melebihi saldo aktif.
+FR-PIN-04  Update saldo_sisa otomatis setiap ada potongan.
+FR-PIN-05  Status otomatis berubah ke LUNAS saat saldo_sisa = 0.
+FR-PIN-06  Pinjaman LUNAS bersifat read-only, hanya untuk histori.
+FR-PIN-07  Tampilkan histori semua pinjaman per anggota.
+FR-PIN-08  Pemotongan FIFO secara default; pengurus dapat memilih manual.
+
+------------------------------------------------------------------------
+8.5  MODUL PENGELUARAN
+------------------------------------------------------------------------
+
+FR-PGL-01  Tambah pengeluaran per sesi dengan kategori:
+           KUD, TENAGA_KERJA, TRUCK, JAGA_MALAM, KAS, LAIN.
+FR-PGL-02  Input nama penerima dan jumlah untuk setiap item pengeluaran.
+FR-PGL-03  Tampilkan total pengeluaran sesi di rekap harian.
+FR-PGL-04  Edit atau hapus pengeluaran selama sesi masih berstatus BUKA.
+
+------------------------------------------------------------------------
+8.6  MODUL LAPORAN & EXPORT
+------------------------------------------------------------------------
+
+FR-LAP-01  Rekap harian dihitung otomatis dari query aggregate transaksi
+           dan pengeluaran sesi yang dipilih.
+FR-LAP-02  Export Excel menghasilkan file .xlsx dengan sheet terstruktur.
+FR-LAP-03  Export PDF menghasilkan file .pdf siap cetak dengan header
+           nama koperasi dan tanggal.
+FR-LAP-04  Pengurus memilih folder tujuan simpan via dialog file picker.
+FR-LAP-05  Nama file otomatis menggunakan format yang telah ditentukan.
+FR-LAP-06  Laporan per anggota dapat difilter berdasarkan rentang tanggal.
+
+------------------------------------------------------------------------
+8.7  MODUL PRINTER THERMAL
+------------------------------------------------------------------------
+
+FR-PRT-01  Mendukung koneksi printer via USB (Windows COM port atau
+           USB direct printing).
+FR-PRT-02  Mendukung koneksi printer via Bluetooth (Windows Bluetooth stack).
+FR-PRT-03  Mendukung kertas thermal lebar 58mm dan 80mm.
+FR-PRT-04  Protokol cetak ESC/POS.
+FR-PRT-05  Test print dari menu Pengaturan untuk verifikasi koneksi.
+FR-PRT-06  Jika printer tidak terhubung saat cetak, sistem tetap menyimpan
+           transaksi dan menandai sudah_cetak = false.
+FR-PRT-07  Tampilkan antrian struk yang belum dicetak.
+FR-PRT-08  Cetak ulang struk berdasarkan nomor struk.
+
+------------------------------------------------------------------------
+8.8  MODUL PENGATURAN
+------------------------------------------------------------------------
+
+FR-SET-01  Set nama koperasi (ditampilkan di header struk dan laporan).
+FR-SET-02  Set data koordinator (nama Alek dan Yudi).
+FR-SET-03  Set path default folder backup.
+FR-SET-04  Pilih printer aktif (USB atau Bluetooth) dan lebar kertas.
+FR-SET-05  Test print untuk verifikasi koneksi printer.
+FR-SET-06  Backup manual database ke folder atau USB.
+FR-SET-07  Restore database dari file backup (dengan konfirmasi peringatan).
+
+
+================================================================================
+9. ATURAN BISNIS & FORMULA KALKULASI
+================================================================================
+
+Semua nilai berikut bersifat DERIVED (turunan) dan TIDAK DISIMPAN di database.
+Nilai dihitung ulang setiap kali diperlukan (tampilan, laporan, struk).
+
+------------------------------------------------------------------------
+FORMULA KALKULASI TRANSAKSI
+------------------------------------------------------------------------
+
+  HARGA BRUTO      = berat_kg x harga_per_kg
+  BIAYA ADM        = berat_kg x tarif_adm_per_kg
+  BIAYA TRS        = berat_kg x tarif_trs
+                     - Jenis DUSUN  : tarif_trs_dusun (dari sesi)
+                     - Jenis IBOL   : tarif_trs_ibol (dari sesi)
+                     - Jenis SENDIRI: Rp 0
+  TOTAL POTONGAN   = BIAYA ADM + BIAYA TRS + pinjaman_dipotong
+  JUMLAH DISETOR   = HARGA BRUTO - TOTAL POTONGAN
+
+  Contoh (data aktual dari 01_APRIL_2026.xls):
+    Anggota    : RASYID
+    Berat      : 223 Kg
+    Harga/Kg   : Rp 16.900
+    Tarif ADM  : Rp 100/Kg
+    Tarif TRS  : Rp 350/Kg (DUSUN)
+    Pinjaman   : Rp 300.000
+
+    Harga Bruto    = 223 x 16.900          = Rp 3.768.700
+    ADM            = 223 x 100             = Rp    22.300
+    TRS            = 223 x 350             = Rp    78.050
+    Total Potongan = 22.300 + 78.050 + 300.000 = Rp 400.350
+    Disetor        = 3.768.700 - 400.350   = Rp 3.368.350
+
+------------------------------------------------------------------------
+UPDATE SALDO PINJAMAN
+------------------------------------------------------------------------
+
+  saldo_baru = saldo_lama - pinjaman_dipotong
+  Jika saldo_baru = 0 maka status = LUNAS
+
+------------------------------------------------------------------------
+ATURAN BISNIS
+------------------------------------------------------------------------
+
+BR-01  Transaksi baru hanya bisa dibuat dalam sesi berstatus BUKA.
+BR-02  Nilai berat_kg harus lebih besar dari 0.
+BR-03  Nilai pinjaman_dipotong tidak boleh melebihi saldo_sisa aktif anggota.
+BR-04  Nilai JUMLAH DISETOR tidak boleh negatif.
+BR-05  Satu sesi hanya boleh ada satu yang berstatus BUKA pada satu waktu.
+BR-06  Setelah sesi TUTUP, transaksi di dalamnya tidak bisa ditambah atau
+       diedit, hanya bisa void dengan konfirmasi.
+BR-07  Void transaksi hanya bisa dilakukan dalam sesi yang sama (BUKA).
+BR-08  Porsi kepemilikan bersama harus berjumlah tepat 100%.
+BR-09  Pinjaman yang sudah LUNAS tidak bisa dimodifikasi.
+BR-10  Data anggota yang dinonaktifkan tetap muncul di histori transaksi lama.
+
+
+================================================================================
+10. VALIDASI & PENANGANAN ERROR
+================================================================================
+
+------------------------------------------------------------------------
+VALIDASI INPUT FORM TIMBANGAN
+------------------------------------------------------------------------
+
+  Kondisi                              Pesan Error                         Aksi
+  ---------------------------------------------------------------------------
+  Berat Kg kosong atau nol             "Berat tidak boleh nol"             Blokir simpan, fokus ke field berat
+  Berat Kg berisi nilai negatif        "Berat tidak valid"                 Blokir simpan
+  Berat Kg berisi karakter non-angka   "Masukkan angka yang valid"         Blokir simpan
+  Potongan pinjaman melebihi saldo     "Melebihi saldo aktif: Rp X"       Blokir simpan, tampilkan saldo maks
+  JUMLAH DISETOR bernilai negatif      "Potongan melebihi nilai sawit"     Blokir simpan, highlight merah
+  Anggota tidak aktif                  "Anggota nonaktif. Lanjutkan?"      Konfirmasi dialog, bisa override
+  Anggota sudah timbang di sesi ini    "Anggota sudah timbang hari ini"    Peringatan, bisa lanjut
+  Sesi tidak dalam status BUKA         "Tidak ada sesi aktif"              Redirect ke halaman buka sesi
+
+------------------------------------------------------------------------
+VALIDASI KEPEMILIKAN BERSAMA
+------------------------------------------------------------------------
+
+  Kondisi                              Pesan Error                         Aksi
+  ---------------------------------------------------------------------------
+  Total porsi persen bukan 100%        "Porsi harus berjumlah 100%"        Blokir simpan
+  Pemilik kedua tidak dipilih          "Pilih anggota kedua"               Blokir simpan
+
+------------------------------------------------------------------------
+VALIDASI SESI
+------------------------------------------------------------------------
+
+  Kondisi                              Pesan Error                         Aksi
+  ---------------------------------------------------------------------------
+  Buat sesi di tanggal yang sudah ada  "Sesi untuk tanggal ini sudah ada"  Blokir buat sesi baru
+
+------------------------------------------------------------------------
+PENANGANAN ERROR PRINTER
+------------------------------------------------------------------------
+
+  Kondisi                              Pesan ke Pengurus                   Aksi
+  ---------------------------------------------------------------------------
+  Printer USB tidak terdeteksi         "Printer tidak terhubung"           Simpan transaksi, tandai belum cetak
+  Printer Bluetooth tidak tersambung   "Printer Bluetooth tidak ditemukan" Simpan transaksi, tandai belum cetak
+  Printer kehabisan kertas             "Periksa kertas printer"            Simpan transaksi, tandai belum cetak
+  Cetak gagal di tengah proses         "Gagal mencetak. Coba lagi?"        Dialog retry / skip
+
+------------------------------------------------------------------------
+PENANGANAN ERROR BACKUP
+------------------------------------------------------------------------
+
+  Kondisi                              Pesan ke Pengurus                   Aksi
+  ---------------------------------------------------------------------------
+  USB penuh saat backup otomatis       "Backup gagal: USB penuh"           Notifikasi, sesi tetap ditutup
+  Folder backup tidak ditemukan        "Folder backup tidak tersedia"      Minta pilih folder baru
+  Izin tulis folder ditolak Windows    "Tidak bisa menulis ke folder ini"  Minta pilih folder lain
+
+
+================================================================================
+11. SKEMA DATABASE (NORMALISASI 3NF)
+================================================================================
+
+Semua tabel berada dalam satu file SQLite lokal.
+Nilai derived (ADM, TRS, HARGA, DISETOR) tidak disimpan; dihitung saat query.
+
+------------------------------------------------------------------------
+TABEL: koordinator
+------------------------------------------------------------------------
+  Kolom           Tipe           Constraint        Keterangan
+  ----------------------------------------------------------------------
+  koordinator_id  TEXT           PRIMARY KEY       Contoh: KOOR-ALEK
+  nama            TEXT           NOT NULL          Nama koordinator
+  catatan         TEXT           nullable          Keterangan tambahan
+  created_at      TEXT           NOT NULL          Format ISO 8601
+
+------------------------------------------------------------------------
+TABEL: anggota
+------------------------------------------------------------------------
+  Kolom           Tipe           Constraint        Keterangan
+  ----------------------------------------------------------------------
+  anggota_id      TEXT           PRIMARY KEY       Contoh: ANK-001
+  koordinator_id  TEXT           FK -> koordinator
+  nama            TEXT           NOT NULL          Nama lengkap petani
+  tipe_angkutan   TEXT           NOT NULL          SENDIRI / DUSUN / IBOL
+  no_hp           TEXT           nullable
+  status_aktif    INTEGER        DEFAULT 1         1 = aktif, 0 = nonaktif
+  created_at      TEXT           NOT NULL
+
+------------------------------------------------------------------------
+TABEL: sesi_timbang
+------------------------------------------------------------------------
+  Kolom               Tipe      Constraint        Keterangan
+  ----------------------------------------------------------------------
+  sesi_id             TEXT      PRIMARY KEY       Contoh: SESI20260401
+  koordinator_id      TEXT      FK -> koordinator
+  tanggal             TEXT      NOT NULL          Format YYYY-MM-DD
+  harga_per_kg        INTEGER   NOT NULL          Harga sawit hari ini
+  tarif_adm_per_kg    INTEGER   NOT NULL          Tarif ADM per Kg
+  tarif_trs_dusun     INTEGER   NOT NULL          Tarif TRS jenis Dusun
+  tarif_trs_ibol      INTEGER   NOT NULL          Tarif TRS jenis Ibol
+  status              TEXT      NOT NULL          BUKA / TUTUP
+  catatan             TEXT      nullable
+  created_at          TEXT      NOT NULL
+  closed_at           TEXT      nullable          Waktu sesi ditutup
+
+------------------------------------------------------------------------
+TABEL: transaksi
+------------------------------------------------------------------------
+  Kolom               Tipe      Constraint        Keterangan
+  ----------------------------------------------------------------------
+  transaksi_id        TEXT      PRIMARY KEY       Auto-generate
+  sesi_id             TEXT      FK -> sesi_timbang
+  anggota_id          TEXT      FK -> anggota
+  berat_kg            INTEGER   NOT NULL          Nilai dari timbangan
+  pinjaman_dipotong   INTEGER   DEFAULT 0         Potongan hutang
+  no_struk            TEXT      UNIQUE            STR-YYYYMMDD-NNN
+  sudah_cetak         INTEGER   DEFAULT 0         0 = belum, 1 = sudah
+  waktu_cetak         TEXT      nullable
+  waktu_input         TEXT      NOT NULL
+  is_void             INTEGER   DEFAULT 0         0 = valid, 1 = void
+
+  Catatan: ADM, TRS, HARGA, TOTAL POTONGAN, DISETOR tidak disimpan.
+  Semua dihitung dari berat_kg + data tarif di sesi_timbang.
+
+------------------------------------------------------------------------
+TABEL: pinjaman
+------------------------------------------------------------------------
+  Kolom           Tipe           Constraint        Keterangan
+  ----------------------------------------------------------------------
+  pinjaman_id     TEXT           PRIMARY KEY
+  anggota_id      TEXT           FK -> anggota
+  tanggal_pinjam  TEXT           NOT NULL
+  jumlah_pokok    INTEGER        NOT NULL          Nilai pinjaman awal
+  saldo_sisa      INTEGER        NOT NULL          Sisa belum lunas
+  status          TEXT           NOT NULL          AKTIF / LUNAS
+  keterangan      TEXT           nullable
+  created_at      TEXT           NOT NULL
+
+------------------------------------------------------------------------
+TABEL: pengeluaran
+------------------------------------------------------------------------
+  Kolom             Tipe         Constraint        Keterangan
+  ----------------------------------------------------------------------
+  pengeluaran_id    TEXT         PRIMARY KEY
+  sesi_id           TEXT         FK -> sesi_timbang
+  kategori          TEXT         NOT NULL          KUD / TENAGA_KERJA /
+                                                   TRUCK / JAGA_MALAM /
+                                                   KAS / LAIN
+  nama_penerima     TEXT         nullable          Untuk TENAGA_KERJA
+  jumlah            INTEGER      NOT NULL
+  keterangan        TEXT         nullable
+  created_at        TEXT         NOT NULL
+
+------------------------------------------------------------------------
+TABEL: kepemilikan_bersama
+------------------------------------------------------------------------
+  Kolom           Tipe           Constraint        Keterangan
+  ----------------------------------------------------------------------
+  id              INTEGER        PRIMARY KEY AUTOINCREMENT
+  transaksi_id    TEXT           FK -> transaksi
+  anggota_id      TEXT           FK -> anggota
+  porsi_persen    REAL           NOT NULL          Contoh: 50.00
+  catatan         TEXT           nullable          Contoh: NANDA/ASWADI
+
+------------------------------------------------------------------------
+RELASI ANTAR TABEL
+------------------------------------------------------------------------
+
+  koordinator    (1) ----> (N)  anggota
+  koordinator    (1) ----> (N)  sesi_timbang
+  sesi_timbang   (1) ----> (N)  transaksi
+  sesi_timbang   (1) ----> (N)  pengeluaran
+  anggota        (1) ----> (N)  transaksi
+  anggota        (1) ----> (N)  pinjaman
+  transaksi      (1) ----> (N)  kepemilikan_bersama  [opsional]
+
+
+================================================================================
+12. DESAIN STRUK THERMAL
+================================================================================
+
+------------------------------------------------------------------------
+SPESIFIKASI PRINTER
+------------------------------------------------------------------------
+
+  Parameter              Nilai
+  ----------------------------------------------------------------------
+  Lebar kertas           58mm atau 80mm
+  Koneksi                USB (Windows COM/direct) atau Bluetooth
+  Protokol cetak         ESC/POS
+  Font                   Monospace (built-in printer font)
+  Karakter per baris     32 karakter (58mm) / 48 karakter (80mm)
+
+------------------------------------------------------------------------
+LAYOUT STRUK TRANSAKSI (58mm, 32 karakter)
+------------------------------------------------------------------------
+
+  ================================
+          [NAMA KOPERASI]
+        STRUK TIMBANG SAWIT
+  ================================
+  Tgl     : DD-MMM-YYYY
+  Sesi    : SESIYYYYMMDD
+  No Struk: STR-YYYYMMDD-NNN
+  --------------------------------
+  Anggota : [NAMA ANGGOTA]
+  No      : [ANGGOTA_ID]
+  Koord.  : [NAMA KOORDINATOR]
+  Angkutan: [SENDIRI/DUSUN/IBOL]
+  --------------------------------
+  Berat         :     [NNN] Kg
+  Harga/Kg      :  Rp [NNN]
+  HARGA BRUTO   :  Rp [NNN]
+  --------------------------------
+  (-) ADM       :  Rp [NNN]
+  (-) TRS       :  Rp [NNN]
+  (-) Pinjaman  :  Rp [NNN]
+  Total Potongan:  Rp [NNN]
+  ================================
+  DISETOR       :  Rp [NNN]
+  ================================
+  Saldo Pinjaman:  Rp [NNN]
+  --------------------------------
+  Dicetak: DD/MM/YYYY HH:MM
+       Terima kasih
+  ================================
+
+------------------------------------------------------------------------
+KOMPONEN STRUK
+------------------------------------------------------------------------
+
+  Header       : Nama koperasi, judul "STRUK TIMBANG SAWIT"
+  Info Sesi    : Tanggal, ID sesi, nomor struk (unik per transaksi)
+  Identitas    : Nama anggota, ID anggota, koordinator, jenis angkutan
+  Detail Timbang: Berat (Kg), harga per Kg, harga bruto
+  Potongan     : Rincian ADM, TRS, pinjaman dipotong, total potongan
+  Hasil Akhir  : JUMLAH DISETOR (dicetak tebal / double-width ESC/POS)
+  Info Pinjaman: Saldo pinjaman tersisa setelah potongan ini
+  Footer       : Timestamp cetak, pesan penutup
+
+------------------------------------------------------------------------
+STRUK PEMBATALAN (VOID)
+------------------------------------------------------------------------
+
+  ================================
+       *** STRUK BATAL ***
+  ================================
+  No Struk Batal: STR-YYYYMMDD-NNN
+  Tgl Batal     : DD/MM/YYYY HH:MM
+  Anggota       : [NAMA]
+  Alasan        : [keterangan void]
+  ================================
+  Transaksi ini dibatalkan.
+  ================================
+
+
+================================================================================
+13. SPESIFIKASI EXPORT DATA
+================================================================================
+
+------------------------------------------------------------------------
+EXPORT EXCEL (.xlsx)
+------------------------------------------------------------------------
+
+  File: Rekap_Harian_YYYYMMDD.xlsx
+
+  Sheet 1 - Rekap Sesi:
+    - Tanggal, koordinator, harga per Kg, tarif
+    - Total anggota, total tonase, total bruto
+    - Total ADM, total TRS, total pinjaman dipotong
+    - Total disetor, total pengeluaran, saldo kas
+
+  Sheet 2 - Detail Transaksi:
+    - No Struk, Nama Anggota, Berat (Kg), Harga Bruto,
+      ADM, TRS, Pinjaman Dipotong, Total Potongan, Disetor,
+      Jenis Angkutan, Waktu Input
+
+  Sheet 3 - Pengeluaran:
+    - Kategori, Nama Penerima, Jumlah, Keterangan
+
+  File: Laporan_Anggota_[NAMA]_YYYYMMDD.xlsx
+  Sheet 1 - Histori Timbang:
+    - Tanggal, Berat, Harga/Kg, Disetor, Pinjaman Dipotong
+  Sheet 2 - Histori Pinjaman:
+    - Tanggal Pinjam, Pokok, Saldo Sisa, Status
+
+------------------------------------------------------------------------
+EXPORT PDF
+------------------------------------------------------------------------
+
+  File: Rekap_Harian_YYYYMMDD.pdf
+  Konten sama dengan Excel Sheet 1 dan 2, format tabel siap cetak.
+  Header: Nama koperasi, tanggal cetak, nomor halaman.
+  Orientasi: Portrait, ukuran A4.
+
+------------------------------------------------------------------------
+BACKUP DATABASE
+------------------------------------------------------------------------
+
+  File       : db_YYYYMMDD.sqlite (atau db_YYYYMMDD_HHMMSS.sqlite)
+  Trigger    : Otomatis saat sesi ditutup + manual kapan saja
+  Tujuan     : Folder lokal atau USB drive yang dipilih pengurus
+  Restore    : Dari menu Pengaturan, pilih file .sqlite, konfirmasi,
+               sistem salin file ke path database aktif (dengan backup
+               file lama terlebih dahulu).
+
+
+================================================================================
+14. SPESIFIKASI NON-FUNGSIONAL
+================================================================================
+
+------------------------------------------------------------------------
+PERFORMA
+------------------------------------------------------------------------
+
+  NF-01  Kalkulasi real-time saat input berat harus selesai dalam < 100ms.
+  NF-02  Simpan transaksi ke SQLite harus selesai dalam < 500ms.
+  NF-03  Generate dan cetak struk harus selesai dalam < 3 detik
+         (tergantung kecepatan printer).
+  NF-04  Export Excel/PDF untuk 200 transaksi harus selesai dalam < 10 detik.
+  NF-05  Aplikasi harus bisa dibuka dan siap digunakan dalam < 5 detik.
+
+------------------------------------------------------------------------
+KEANDALAN
+------------------------------------------------------------------------
+
+  NF-06  Jika aplikasi ditutup paksa saat input timbangan, data yang belum
+         dikonfirmasi SIMPAN tidak tersimpan (belum ada INSERT).
+  NF-07  Setelah SIMPAN berhasil, data tidak dapat hilang meski aplikasi
+         crash setelahnya (SQLite transaction guarantees).
+  NF-08  Backup otomatis memastikan salinan data tersedia di luar laptop
+         setelah setiap sesi ditutup.
+
+------------------------------------------------------------------------
+KEMUDAHAN PENGGUNAAN
+------------------------------------------------------------------------
+
+  NF-09  Antarmuka dalam Bahasa Indonesia.
+  NF-10  Tidak ada mekanisme login; aplikasi langsung siap digunakan.
+  NF-11  Navigasi utama maksimal 2 klik dari layar utama ke form timbang.
+  NF-12  Semua angka ditampilkan dengan format ribuan (Rp 1.000.000).
+  NF-13  Pesan error ditampilkan dalam Bahasa Indonesia yang mudah dipahami.
+  NF-14  Tombol aksi utama (SIMPAN, CETAK) berukuran besar dan mudah diklik.
+
+------------------------------------------------------------------------
+KEAMANAN DATA
+------------------------------------------------------------------------
+
+  NF-15  File database SQLite disimpan di folder yang ditentukan pengurus,
+         tidak di folder sistem Windows.
+  NF-16  Tidak ada data yang dikirim ke internet dalam kondisi apapun.
+  NF-17  Backup database dienkripsi opsional (fase berikutnya).
+
+------------------------------------------------------------------------
+KOMPATIBILITAS
+------------------------------------------------------------------------
+
+  NF-18  Mendukung Windows 10 (64-bit) dan Windows 11 (64-bit).
+  NF-19  Tidak memerlukan instalasi runtime tambahan (.NET, Java, dll).
+         Flutter mengompilasi ke binary native Windows.
+  NF-20  Mendukung resolusi layar minimum 1366 x 768.
+
+
+================================================================================
+15. ARSITEKTUR APLIKASI FLUTTER
+================================================================================
+
+------------------------------------------------------------------------
+STRUKTUR FOLDER PROYEK
+------------------------------------------------------------------------
+
+  lib/
+  |-- main.dart                    Entry point aplikasi
+  |-- app.dart                     MaterialApp, routing, theme
+  |
+  |-- core/
+  |   |-- database/
+  |   |   |-- database_helper.dart  Koneksi SQLite, migrasi
+  |   |   |-- migrations.dart       Script CREATE TABLE
+  |   |
+  |   |-- constants/
+  |   |   |-- enums.dart            TipeAngkutan, StatusSesi, StatusPinjaman, dll
+  |   |   |-- strings.dart          Semua teks UI (Bahasa Indonesia)
+  |
+  |-- models/
+  |   |-- koordinator.dart
+  |   |-- anggota.dart
+  |   |-- sesi_timbang.dart
+  |   |-- transaksi.dart
+  |   |-- pinjaman.dart
+  |   |-- pengeluaran.dart
+  |   |-- kepemilikan_bersama.dart
+  |
+  |-- repositories/
+  |   |-- anggota_repository.dart
+  |   |-- sesi_repository.dart
+  |   |-- transaksi_repository.dart
+  |   |-- pinjaman_repository.dart
+  |   |-- pengeluaran_repository.dart
+  |
+  |-- services/
+  |   |-- kalkulasi_service.dart    Semua formula bisnis (tanpa UI)
+  |   |-- printer_service.dart      Koneksi USB/BT dan kirim ESC/POS
+  |   |-- export_service.dart       Generate Excel dan PDF
+  |   |-- backup_service.dart       Copy file SQLite ke USB/folder
+  |
+  |-- providers/
+  |   |-- sesi_provider.dart
+  |   |-- transaksi_provider.dart
+  |   |-- pinjaman_provider.dart
+  |
+  |-- screens/
+  |   |-- dashboard/
+  |   |   |-- dashboard_screen.dart
+  |   |
+  |   |-- sesi/
+  |   |   |-- buka_sesi_screen.dart
+  |   |   |-- tutup_sesi_screen.dart
+  |   |
+  |   |-- timbang/
+  |   |   |-- form_timbang_screen.dart
+  |   |   |-- daftar_transaksi_screen.dart
+  |   |
+  |   |-- pinjaman/
+  |   |   |-- daftar_pinjaman_screen.dart
+  |   |   |-- tambah_pinjaman_screen.dart
+  |   |
+  |   |-- anggota/
+  |   |   |-- daftar_anggota_screen.dart
+  |   |   |-- form_anggota_screen.dart
+  |   |
+  |   |-- laporan/
+  |   |   |-- rekap_harian_screen.dart
+  |   |   |-- laporan_anggota_screen.dart
+  |   |   |-- laporan_pinjaman_screen.dart
+  |   |   |-- rekap_global_screen.dart
+  |   |
+  |   |-- pengaturan/
+  |       |-- pengaturan_screen.dart
+  |
+  |-- widgets/
+      |-- kalkulasi_preview_widget.dart  Preview hitung real-time
+      |-- anggota_search_widget.dart     Search dropdown anggota
+      |-- struk_preview_widget.dart      Preview struk di layar
+      |-- konfirmasi_dialog.dart         Dialog konfirmasi standar
+      |-- error_banner.dart              Banner pesan error merah
+
+------------------------------------------------------------------------
+PAKET FLUTTER YANG DIPERLUKAN (pubspec.yaml)
+------------------------------------------------------------------------
+
+  drift                    ORM SQLite untuk Flutter Desktop
+  drift_sqflite            Adapter SQLite untuk Windows
+  provider                 State management
+  excel                    Generate file .xlsx
+  pdf                      Generate file .pdf
+  printing                 Preview dan cetak PDF
+  file_picker              Dialog pilih folder/file
+  intl                     Format angka dan tanggal (Bahasa Indonesia)
+  path_provider            Path folder aplikasi Windows
+  win32 atau flutter_escpos Kirim perintah ESC/POS ke printer USB
+  flutter_bluetooth_serial Koneksi printer Bluetooth
+
+------------------------------------------------------------------------
+CATATAN TEKNIS PENTING
+------------------------------------------------------------------------
+
+  1. Semua query aggregate (SUM, COUNT) untuk laporan dan rekap
+     dieksekusi langsung di SQLite untuk performa optimal.
+
+  2. Nilai ADM, TRS, HARGA BRUTO, dan JUMLAH DISETOR TIDAK pernah
+     di-INSERT ke database. Selalu dihitung ulang di layer service
+     menggunakan data berat_kg dan tarif dari sesi_timbang.
+
+  3. Untuk cetak struk via USB di Windows, gunakan pendekatan
+     win32 API (CreateFile ke nama port printer) atau lewat
+     Windows Spooler menggunakan RawPrinterHelper.
+
+  4. File SQLite disimpan di folder yang bisa dipilih pengurus,
+     disarankan default di Documents\TPK_Koperasi\data.db agar
+     mudah ditemukan dan di-backup manual.
+
+  5. Gunakan SQLite WAL mode (Write-Ahead Logging) untuk mengurangi
+     risiko korupsi data jika aplikasi ditutup paksa.
+
+
+================================================================================
+END OF DOCUMENT
+================================================================================
+PRD_Sistem_TPK_Koperasi.txt  |  Versi 1.1.0  |  Juni 2026
+================================================================================

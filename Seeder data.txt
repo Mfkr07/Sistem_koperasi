@@ -1,0 +1,388 @@
+================================================================================
+SEEDER DATA - SISTEM TPK KOPERASI SAWIT
+Sumber  : 01_APRIL_2026.xls
+Tanggal : 01 April 2026
+================================================================================
+
+--------------------------------------------------------------------------------
+TABEL: koordinator
+--------------------------------------------------------------------------------
+koordinator_id       nama                 catatan
+-------------------- -------------------- --------------------
+KOOR-YUDI            YUDI                 Koordinator DATA 1 - 9.039 Kg
+KOOR-ALEK            ALEK                 Koordinator BALAM KETUA - 11.461 Kg
+
+--------------------------------------------------------------------------------
+TABEL: sesi_timbang
+--------------------------------------------------------------------------------
+sesi_id          koordinator_id   tanggal        harga_per_kg   tarif_adm    tarif_trs_dusun  tarif_trs_ibol   status  
+---------------- ---------------- -------------- -------------- ------------ ---------------- ---------------- --------
+SESI20260401Y    KOOR-YUDI        2026-04-01     16900          100          100              350              TUTUP   
+SESI20260401A    KOOR-ALEK        2026-04-01     16900          100          100              350              TUTUP   
+
+  Catatan tarif:
+  - tarif_adm       : Rp 100 / Kg (semua anggota)
+  - tarif_trs_dusun : Rp 100 / Kg (dipakai sebagian angkutan DUSUN)
+  - tarif_trs_ibol  : Rp 350 / Kg (IBOL / angkutan jarak jauh)
+  - Anggota SENDIRI : TRS = Rp 0
+
+--------------------------------------------------------------------------------
+TABEL: anggota
+--------------------------------------------------------------------------------
+anggota_id     koordinator_id   nama                   tipe_angkutan  status_aktif
+-------------- ---------------- ---------------------- -------------- ------------
+ANK-Y001       KOOR-YUDI        HARMANSYAH             SENDIRI        1
+ANK-Y002       KOOR-YUDI        YORMAN                 SENDIRI        1
+ANK-Y003       KOOR-YUDI        HANDA                  SENDIRI        1
+ANK-Y004       KOOR-YUDI        ISMAN                  SENDIRI        1
+ANK-Y005       KOOR-YUDI        HARDEN                 SENDIRI        1
+ANK-Y006       KOOR-YUDI        ADI F                  SENDIRI        1
+ANK-Y007       KOOR-YUDI        HERMAN                 SENDIRI        1
+ANK-Y008       KOOR-YUDI        AAN / HERMAN           SENDIRI        1
+ANK-Y009       KOOR-YUDI        REZA                   SENDIRI        1
+ANK-Y010       KOOR-YUDI        MUKSIN                 SENDIRI        1
+ANK-Y011       KOOR-YUDI        RIZAL EFDI             SENDIRI        1
+ANK-Y012       KOOR-YUDI        NANDA / ASWADI         SENDIRI        1
+ANK-Y013       KOOR-YUDI        ABDI                   DUSUN          1
+ANK-Y014       KOOR-YUDI        SEHUSIN                DUSUN          1
+ANK-Y015       KOOR-YUDI        RASYID                 DUSUN          1
+ANK-Y016       KOOR-YUDI        YANTO                  SENDIRI        1
+ANK-Y017       KOOR-YUDI        HANDIKA                SENDIRI        1
+ANK-Y018       KOOR-YUDI        NISPA                  DUSUN          1
+ANK-Y019       KOOR-YUDI        PADELAN                DUSUN          1
+ANK-Y020       KOOR-YUDI        SARWO                  DUSUN          1
+ANK-Y021       KOOR-YUDI        DINOK                  DUSUN          1
+ANK-Y022       KOOR-YUDI        YUSUF                  DUSUN          1
+ANK-Y023       KOOR-YUDI        MAISAR                 DUSUN          1
+ANK-Y024       KOOR-YUDI        DEBY                   DUSUN          1
+ANK-Y025       KOOR-YUDI        ASWIN 1                DUSUN          1
+ANK-Y026       KOOR-YUDI        ASWIN 2                SENDIRI        1
+ANK-Y027       KOOR-YUDI        BIBIN                  SENDIRI        1
+ANK-Y028       KOOR-YUDI        MUSLIMA                SENDIRI        1
+ANK-Y029       KOOR-YUDI        ANDESKA                SENDIRI        1
+ANK-Y030       KOOR-YUDI        IJOL JAWI              SENDIRI        1
+ANK-Y031       KOOR-YUDI        BALIAN                 SENDIRI        1
+ANK-Y032       KOOR-YUDI        RABEL                  SENDIRI        1
+ANK-Y033       KOOR-YUDI        RIANTO                 SENDIRI        1
+ANK-Y034       KOOR-YUDI        EVI                    SENDIRI        1
+ANK-Y035       KOOR-YUDI        AYIB                   SENDIRI        1
+ANK-Y036       KOOR-YUDI        PEDRI                  SENDIRI        1
+ANK-Y037       KOOR-YUDI        ELPA                   SENDIRI        1
+ANK-Y038       KOOR-YUDI        MELDI SIDI             SENDIRI        1
+ANK-Y039       KOOR-YUDI        RISWAN/YANSA           SENDIRI        1
+ANK-Y040       KOOR-YUDI        RISWAN/LED             SENDIRI        1
+ANK-Y041       KOOR-YUDI        RISWAN/WAHYU           SENDIRI        1
+ANK-Y042       KOOR-YUDI        RISWAN/ARIA            SENDIRI        1
+ANK-Y043       KOOR-YUDI        RISWAN/TIA             SENDIRI        1
+ANK-Y044       KOOR-YUDI        KASYANI                SENDIRI        1
+ANK-Y045       KOOR-YUDI        YUSRON                 DUSUN          1
+ANK-Y046       KOOR-YUDI        KAIRA                  SENDIRI        1
+ANK-Y047       KOOR-YUDI        YAN KP 5               SENDIRI        1
+ANK-Y048       KOOR-YUDI        HOTMAN                 SENDIRI        1
+ANK-Y049       KOOR-YUDI        ANTO                   SENDIRI        1
+ANK-Y050       KOOR-YUDI        JUNIK                  SENDIRI        1
+ANK-Y051       KOOR-YUDI        YUNUS                  SENDIRI        1
+ANK-Y052       KOOR-YUDI        WEN                    SENDIRI        1
+ANK-Y053       KOOR-YUDI        HOSMA                  DUSUN          1
+ANK-Y054       KOOR-YUDI        SOLMAN/NOPRI           DUSUN          1
+ANK-Y055       KOOR-YUDI        NOPRI                  DUSUN          1
+ANK-Y056       KOOR-YUDI        OM RUSI                SENDIRI        1
+ANK-Y057       KOOR-YUDI        BAKRIN                 DUSUN          1
+ANK-Y058       KOOR-YUDI        BARON                  DUSUN          1
+ANK-Y059       KOOR-YUDI        GOPA                   DUSUN          1
+ANK-Y060       KOOR-YUDI        SOLMAN                 DUSUN          1
+ANK-Y061       KOOR-YUDI        TASLIM /ALKO           DUSUN          1
+ANK-Y062       KOOR-YUDI        TRES                   SENDIRI        1
+ANK-Y063       KOOR-YUDI        IDRUS                  DUSUN          1
+ANK-Y064       KOOR-YUDI        SAHUN                  DUSUN          1
+ANK-Y065       KOOR-YUDI        EKLAN                  DUSUN          1
+ANK-Y066       KOOR-YUDI        DELO                   DUSUN          1
+ANK-Y067       KOOR-YUDI        DALMAN                 DUSUN          1
+ANK-Y068       KOOR-YUDI        EDI/RIAN               DUSUN          1
+ANK-Y069       KOOR-YUDI        RIAN/EFRI              DUSUN          1
+ANK-Y070       KOOR-YUDI        MELSA                  DUSUN          1
+ANK-Y071       KOOR-YUDI        YANEK                  DUSUN          1
+ANK-Y072       KOOR-YUDI        RISKAN                 DUSUN          1
+ANK-Y073       KOOR-YUDI        KOPLI                  DUSUN          1
+ANK-Y075       KOOR-YUDI        HARTINI GUCI           SENDIRI        1
+ANK-Y076       KOOR-YUDI        RUSDAYA                SENDIRI        1
+ANK-Y077       KOOR-YUDI        NURALIM                SENDIRI        1
+ANK-Y078       KOOR-YUDI        HENGKI                 SENDIRI        1
+ANK-Y079       KOOR-YUDI        YANSA/NETI             DUSUN          1
+ANK-Y080       KOOR-YUDI        YUSRAN RS              DUSUN          1
+ANK-Y081       KOOR-YUDI        TATA                   DUSUN          1
+ANK-Y082       KOOR-YUDI        SOLMIDI                DUSUN          1
+ANK-Y083       KOOR-YUDI        IPAN / OMCI            DUSUN          1
+ANK-Y084       KOOR-YUDI        ASMARIA                DUSUN          1
+ANK-Y085       KOOR-YUDI        PAULAN                 DUSUN          1
+ANK-Y086       KOOR-YUDI        IDIAMIN                DUSUN          1
+ANK-Y087       KOOR-YUDI        ASRUL                  SENDIRI        1
+ANK-Y088       KOOR-YUDI        ENI                    SENDIRI        1
+ANK-Y089       KOOR-YUDI        NANDA / ISWAL          SENDIRI        1
+ANK-Y090       KOOR-YUDI        ANGGA                  SENDIRI        1
+ANK-Y091       KOOR-YUDI        AZIZ                   SENDIRI        1
+ANK-Y092       KOOR-YUDI        HOMSA                  SENDIRI        1
+ANK-Y093       KOOR-YUDI        SIDI                   SENDIRI        1
+ANK-Y094       KOOR-YUDI        UDIN                   DUSUN          1
+ANK-Y095       KOOR-YUDI        UDAY                   DUSUN          1
+ANK-Y096       KOOR-YUDI        KADI                   DUSUN          1
+ANK-Y097       KOOR-YUDI        NUKING                 DUSUN          1
+ANK-Y098       KOOR-YUDI        JOJO                   DUSUN          1
+ANK-Y099       KOOR-YUDI        OKTA                   DUSUN          1
+ANK-Y100       KOOR-YUDI        AMRUL                  DUSUN          1
+ANK-Y101       KOOR-YUDI        TANDRI                 DUSUN          1
+ANK-Y102       KOOR-YUDI        ROBY                   DUSUN          1
+ANK-Y103       KOOR-YUDI        RONI                   DUSUN          1
+ANK-Y104       KOOR-YUDI        MAK HARMAN             SENDIRI        1
+ANK-Y105       KOOR-YUDI        YANSA /SANTI           DUSUN          1
+ANK-Y106       KOOR-YUDI        ERMAN                  DUSUN          1
+ANK-Y107       KOOR-YUDI        SORDI                  DUSUN          1
+ANK-Y108       KOOR-YUDI        REHAN                  DUSUN          1
+ANK-Y109       KOOR-YUDI        ARIMAN                 DUSUN          1
+ANK-Y110       KOOR-YUDI        NANDA                  DUSUN          1
+ANK-Y111       KOOR-YUDI        SARMIDI                DUSUN          1
+ANK-Y112       KOOR-YUDI        IKMAL                  DUSUN          1
+ANK-Y113       KOOR-YUDI        PEBDI                  SENDIRI        1
+ANK-Y114       KOOR-YUDI        ABEL                   DUSUN          1
+ANK-Y115       KOOR-YUDI        MUSLIM                 SENDIRI        1
+
+  -- Anggota koordinator ALEK (dari sheet BALAM KETUA) --
+
+ANK-A001       KOOR-ALEK        INDRA                  SENDIRI        1
+ANK-A002       KOOR-ALEK        NURALIM                SENDIRI        1
+ANK-A003       KOOR-ALEK        PEBDI                  SENDIRI        1
+ANK-A004       KOOR-ALEK        RUDI                   SENDIRI        1
+ANK-A005       KOOR-ALEK        MAK HARMAN             SENDIRI        1
+ANK-A006       KOOR-ALEK        MUSLIM                 SENDIRI        1
+ANK-A007       KOOR-ALEK        SELAMAT                SENDIRI        1
+ANK-A008       KOOR-ALEK        MUSLIMA                SENDIRI        1
+
+--------------------------------------------------------------------------------
+TABEL: pinjaman (saldo aktif per 01 April 2026 sebelum sesi)
+--------------------------------------------------------------------------------
+  Pinjaman berikut tercatat dipotong pada sesi 01 April 2026.
+  Nilai jumlah_pokok = estimasi minimum sama dengan pinjaman_dipotong.
+  saldo_sisa setelah sesi = jumlah_pokok - pinjaman_dipotong.
+
+pinjaman_id    anggota_id     nama                   jumlah_pokok     dipotong_sesi    saldo_sisa     status  
+-------------- -------------- ---------------------- ---------------- ---------------- -------------- --------
+PIN-001        ANK-Y002       YORMAN                 200,000          200,000          0              LUNAS
+PIN-002        ANK-Y009       REZA                   600,000          600,000          0              LUNAS
+PIN-003        ANK-Y015       RASYID                 300,000          300,000          0              LUNAS
+PIN-004        ANK-Y030       IJOL JAWI              250,000          250,000          0              LUNAS
+PIN-005        ANK-Y063       IDRUS                  200,000          200,000          0              LUNAS
+PIN-006        ANK-Y065       EKLAN                  500,000          500,000          0              LUNAS
+PIN-007        ANK-Y087       ASRUL                  400,000          400,000          0              LUNAS
+PIN-008        ANK-Y091       AZIZ                   200,000          200,000          0              LUNAS
+PIN-009        ANK-Y096       KADI                   300,000          300,000          0              LUNAS
+PIN-010        ANK-Y098       JOJO                   400,000          400,000          0              LUNAS
+PIN-011        ANK-Y100       AMRUL                  400,000          400,000          0              LUNAS
+PIN-012        ANK-Y104       MAK HARMAN             400,000          400,000          0              LUNAS
+PIN-013        ANK-Y110       NANDA                  300,000          300,000          0              LUNAS
+PIN-014        ANK-Y111       SARMIDI                1,000,000        1,000,000        0              LUNAS
+PIN-015        ANK-Y113       PEBDI                  600,000          600,000          0              LUNAS
+
+  Catatan: Semua pinjaman di atas lunas setelah sesi 01 April 2026.
+  Untuk data pinjaman yang masih aktif sebelum sesi ini,
+  diperlukan data historis dari periode sebelumnya.
+
+--------------------------------------------------------------------------------
+TABEL: transaksi (sesi SESI20260401Y - Koordinator YUDI)
+--------------------------------------------------------------------------------
+no_struk               anggota_id     nama                   berat_kg   pinjaman_dipotong    angkutan  
+---------------------- -------------- ---------------------- ---------- -------------------- ----------
+STR-20260401-001       ANK-Y001       HARMANSYAH             156        0                    SENDIRI
+STR-20260401-002       ANK-Y002       YORMAN                 68         200,000              SENDIRI
+STR-20260401-003       ANK-Y003       HANDA                  92         0                    SENDIRI
+STR-20260401-004       ANK-Y004       ISMAN                  36         0                    SENDIRI
+STR-20260401-005       ANK-Y005       HARDEN                 128        0                    SENDIRI
+STR-20260401-006       ANK-Y006       ADI F                  50         0                    SENDIRI
+STR-20260401-007       ANK-Y007       HERMAN                 99         0                    SENDIRI
+STR-20260401-008       ANK-Y008       AAN / HERMAN           48         0                    SENDIRI
+STR-20260401-009       ANK-Y009       REZA                   69         600,000              SENDIRI
+STR-20260401-010       ANK-Y010       MUKSIN                 76         0                    SENDIRI
+STR-20260401-011       ANK-Y011       RIZAL EFDI             60         0                    SENDIRI
+STR-20260401-012       ANK-Y012       NANDA / ASWADI         124        0                    SENDIRI
+STR-20260401-013       ANK-Y013       ABDI                   47         0                    DUSUN
+STR-20260401-014       ANK-Y014       SEHUSIN                42         0                    DUSUN
+STR-20260401-015       ANK-Y015       RASYID                 223        300,000              DUSUN
+STR-20260401-016       ANK-Y016       YANTO                  36         0                    SENDIRI
+STR-20260401-017       ANK-Y017       HANDIKA                25         0                    SENDIRI
+STR-20260401-018       ANK-Y018       NISPA                  214        0                    DUSUN
+STR-20260401-019       ANK-Y019       PADELAN                74         0                    DUSUN
+STR-20260401-020       ANK-Y020       SARWO                  95         0                    DUSUN
+STR-20260401-021       ANK-Y021       DINOK                  77         0                    DUSUN
+STR-20260401-022       ANK-Y022       YUSUF                  75         0                    DUSUN
+STR-20260401-023       ANK-Y023       MAISAR                 55         0                    DUSUN
+STR-20260401-024       ANK-Y024       DEBY                   46         0                    DUSUN
+STR-20260401-025       ANK-Y025       ASWIN 1                53         0                    DUSUN
+STR-20260401-026       ANK-Y026       ASWIN 2                101        0                    SENDIRI
+STR-20260401-027       ANK-Y027       BIBIN                  117        0                    SENDIRI
+STR-20260401-028       ANK-Y028       MUSLIMA                35         0                    SENDIRI
+STR-20260401-029       ANK-Y029       ANDESKA                44         0                    SENDIRI
+STR-20260401-030       ANK-Y030       IJOL JAWI              44         250,000              SENDIRI
+STR-20260401-031       ANK-Y031       BALIAN                 68         0                    SENDIRI
+STR-20260401-032       ANK-Y032       RABEL                  87         0                    SENDIRI
+STR-20260401-033       ANK-Y033       RIANTO                 64         0                    SENDIRI
+STR-20260401-034       ANK-Y034       EVI                    60         0                    SENDIRI
+STR-20260401-035       ANK-Y035       AYIB                   40         0                    SENDIRI
+STR-20260401-036       ANK-Y036       PEDRI                  195        0                    SENDIRI
+STR-20260401-037       ANK-Y037       ELPA                   64         0                    SENDIRI
+STR-20260401-038       ANK-Y038       MELDI SIDI             59         0                    SENDIRI
+STR-20260401-039       ANK-Y039       RISWAN/YANSA           82         0                    SENDIRI
+STR-20260401-040       ANK-Y040       RISWAN/LED             122        0                    SENDIRI
+STR-20260401-041       ANK-Y041       RISWAN/WAHYU           166        0                    SENDIRI
+STR-20260401-042       ANK-Y042       RISWAN/ARIA            124        0                    SENDIRI
+STR-20260401-043       ANK-Y043       RISWAN/TIA             174        0                    SENDIRI
+STR-20260401-044       ANK-Y044       KASYANI                90         0                    SENDIRI
+STR-20260401-045       ANK-Y045       YUSRON                 92         0                    DUSUN
+STR-20260401-046       ANK-Y046       KAIRA                  56         0                    SENDIRI
+STR-20260401-047       ANK-Y047       YAN KP 5               32         0                    SENDIRI
+STR-20260401-048       ANK-Y048       HOTMAN                 40         0                    SENDIRI
+STR-20260401-049       ANK-Y049       ANTO                   42         0                    SENDIRI
+STR-20260401-050       ANK-Y050       JUNIK                  22         0                    SENDIRI
+STR-20260401-051       ANK-Y051       YUNUS                  42         0                    SENDIRI
+STR-20260401-052       ANK-Y052       WEN                    24         0                    SENDIRI
+STR-20260401-053       ANK-Y053       HOSMA                  10         0                    DUSUN
+STR-20260401-054       ANK-Y054       SOLMAN/NOPRI           47         0                    DUSUN
+STR-20260401-055       ANK-Y055       NOPRI                  45         0                    DUSUN
+STR-20260401-056       ANK-Y056       OM RUSI                72         0                    SENDIRI
+STR-20260401-057       ANK-Y057       BAKRIN                 81         0                    DUSUN
+STR-20260401-058       ANK-Y058       BARON                  85         0                    DUSUN
+STR-20260401-059       ANK-Y059       GOPA                   29         0                    DUSUN
+STR-20260401-060       ANK-Y060       SOLMAN                 17         0                    DUSUN
+STR-20260401-061       ANK-Y061       TASLIM /ALKO           17         0                    DUSUN
+STR-20260401-062       ANK-Y062       TRES                   66         0                    SENDIRI
+STR-20260401-063       ANK-Y063       IDRUS                  43         200,000              DUSUN
+STR-20260401-064       ANK-Y064       SAHUN                  60         0                    DUSUN
+STR-20260401-065       ANK-Y065       EKLAN                  107        500,000              DUSUN
+STR-20260401-066       ANK-Y066       DELO                   61         0                    DUSUN
+STR-20260401-067       ANK-Y067       DALMAN                 32         0                    DUSUN
+STR-20260401-068       ANK-Y068       EDI/RIAN               140        0                    DUSUN
+STR-20260401-069       ANK-Y069       RIAN/EFRI              50         0                    DUSUN
+STR-20260401-070       ANK-Y070       MELSA                  201        0                    DUSUN
+STR-20260401-071       ANK-Y071       YANEK                  84         0                    DUSUN
+STR-20260401-072       ANK-Y072       RISKAN                 42         0                    DUSUN
+STR-20260401-073       ANK-Y073       KOPLI                  51         0                    DUSUN
+STR-20260401-075       ANK-Y075       HARTINI GUCI           53         0                    SENDIRI
+STR-20260401-076       ANK-Y076       RUSDAYA                20         0                    SENDIRI
+STR-20260401-077       ANK-Y077       NURALIM                22         0                    SENDIRI
+STR-20260401-078       ANK-Y078       HENGKI                 70         0                    SENDIRI
+STR-20260401-079       ANK-Y079       YANSA/NETI             102        0                    DUSUN
+STR-20260401-080       ANK-Y080       YUSRAN RS              34         0                    DUSUN
+STR-20260401-081       ANK-Y081       TATA                   104        0                    DUSUN
+STR-20260401-082       ANK-Y082       SOLMIDI                70         0                    DUSUN
+STR-20260401-083       ANK-Y083       IPAN / OMCI            50         0                    DUSUN
+STR-20260401-084       ANK-Y084       ASMARIA                81         0                    DUSUN
+STR-20260401-085       ANK-Y085       PAULAN                 34         0                    DUSUN
+STR-20260401-086       ANK-Y086       IDIAMIN                124        0                    DUSUN
+STR-20260401-087       ANK-Y087       ASRUL                  33         400,000              SENDIRI
+STR-20260401-088       ANK-Y088       ENI                    80         0                    SENDIRI
+STR-20260401-089       ANK-Y089       NANDA / ISWAL          59         0                    SENDIRI
+STR-20260401-090       ANK-Y090       ANGGA                  52         0                    SENDIRI
+STR-20260401-091       ANK-Y091       AZIZ                   85         200,000              SENDIRI
+STR-20260401-092       ANK-Y092       HOMSA                  53         0                    SENDIRI
+STR-20260401-093       ANK-Y093       SIDI                   46         0                    SENDIRI
+STR-20260401-094       ANK-Y094       UDIN                   207        0                    DUSUN
+STR-20260401-095       ANK-Y095       UDAY                   134        0                    DUSUN
+STR-20260401-096       ANK-Y096       KADI                   203        300,000              DUSUN
+STR-20260401-097       ANK-Y097       NUKING                 60         0                    DUSUN
+STR-20260401-098       ANK-Y098       JOJO                   148        400,000              DUSUN
+STR-20260401-099       ANK-Y099       OKTA                   126        0                    DUSUN
+STR-20260401-100       ANK-Y100       AMRUL                  128        400,000              DUSUN
+STR-20260401-101       ANK-Y101       TANDRI                 108        0                    DUSUN
+STR-20260401-102       ANK-Y102       ROBY                   58         0                    DUSUN
+STR-20260401-103       ANK-Y103       RONI                   64         0                    DUSUN
+STR-20260401-104       ANK-Y104       MAK HARMAN             100        400,000              SENDIRI
+STR-20260401-105       ANK-Y105       YANSA /SANTI           92         0                    DUSUN
+STR-20260401-106       ANK-Y106       ERMAN                  40         0                    DUSUN
+STR-20260401-107       ANK-Y107       SORDI                  209        0                    DUSUN
+STR-20260401-108       ANK-Y108       REHAN                  116        0                    DUSUN
+STR-20260401-109       ANK-Y109       ARIMAN                 124        0                    DUSUN
+STR-20260401-110       ANK-Y110       NANDA                  73         300,000              DUSUN
+STR-20260401-111       ANK-Y111       SARMIDI                76         1,000,000            DUSUN
+STR-20260401-112       ANK-Y112       IKMAL                  33         0                    DUSUN
+STR-20260401-113       ANK-Y113       PEBDI                  142        600,000              SENDIRI
+STR-20260401-114       ANK-Y114       ABEL                   78         0                    DUSUN
+STR-20260401-115       ANK-Y115       MUSLIM                 54         0                    SENDIRI
+
+  Total baris transaksi YUDI : 115
+  Total tonase YUDI          : 9.039 Kg
+  Total pinjaman dipotong    : Rp 6.050.000
+
+  Verifikasi vs Excel:
+  - Total Kg Excel   : 9.039  | Seeder : 9.039
+  - Total Pinj Excel : 6.050.000 | Seeder : 6.050.000
+
+--------------------------------------------------------------------------------
+TABEL: pengeluaran (sesi SESI20260401Y - sheet FEE)
+--------------------------------------------------------------------------------
+pengeluaran_id   sesi_id          kategori         nama_penerima        jumlah
+---------------- ---------------- ---------------- -------------------- --------------
+PGL-001          SESI20260401Y    KUD              KUD                       1.000.000
+PGL-002          SESI20260401Y    KUD              IURAN ANGGOTA               100.000
+PGL-003          SESI20260401Y    TENAGA_KERJA     ANTO                        400.000
+PGL-004          SESI20260401Y    TENAGA_KERJA     ICI                         400.000
+PGL-005          SESI20260401Y    TENAGA_KERJA     IDIWAN                      400.000
+PGL-006          SESI20260401Y    TENAGA_KERJA     JUMIRI                      400.000
+PGL-007          SESI20260401Y    TENAGA_KERJA     SAMSIR                      500.000
+PGL-008          SESI20260401Y    TENAGA_KERJA     OM RUSI                     500.000
+PGL-009          SESI20260401Y    TENAGA_KERJA     KOHIR                       400.000
+PGL-010          SESI20260401Y    TENAGA_KERJA     AAT                         150.000
+PGL-011          SESI20260401Y    TENAGA_KERJA     LESMAN                      150.000
+PGL-012          SESI20260401Y    TENAGA_KERJA     PEBDI                       150.000
+PGL-013          SESI20260401Y    JAGA_MALAM       JAGA MALAM                  400.000
+PGL-014          SESI20260401Y    TRUCK            TRUCK                       300.000
+PGL-015          SESI20260401Y    KAS              KAS TPK                 1.500.000
+
+  Total pengeluaran YUDI : Rp 6.850.000
+
+--------------------------------------------------------------------------------
+TABEL: kepemilikan_bersama
+--------------------------------------------------------------------------------
+  Berikut transaksi dengan nama ganda yang perlu dicatat sebagai
+  kepemilikan bersama (porsi 50/50 default, dapat disesuaikan).
+
+id     no_struk               nama_transaksi         pemilik_1          pemilik_2          porsi
+------ ---------------------- ---------------------- ------------------ ------------------ ----------
+1      STR-20260401-008       AAN / HERMAN           AAN                HERMAN             50% / 50%
+2      STR-20260401-012       NANDA / ASWADI         NANDA              ASWADI             50% / 50%
+3      STR-20260401-039       RISWAN/YANSA           RISWAN             YANSA              50% / 50%
+4      STR-20260401-040       RISWAN/LED             RISWAN             LED                50% / 50%
+5      STR-20260401-041       RISWAN/WAHYU           RISWAN             WAHYU              50% / 50%
+6      STR-20260401-042       RISWAN/ARIA            RISWAN             ARIA               50% / 50%
+7      STR-20260401-043       RISWAN/TIA             RISWAN             TIA                50% / 50%
+8      STR-20260401-054       SOLMAN/NOPRI           SOLMAN             NOPRI              50% / 50%
+9      STR-20260401-061       TASLIM /ALKO           TASLIM             ALKO               50% / 50%
+10     STR-20260401-068       EDI/RIAN               EDI                RIAN               50% / 50%
+11     STR-20260401-069       RIAN/EFRI              RIAN               EFRI               50% / 50%
+12     STR-20260401-079       YANSA/NETI             YANSA              NETI               50% / 50%
+13     STR-20260401-083       IPAN / OMCI            IPAN               OMCI               50% / 50%
+14     STR-20260401-089       NANDA / ISWAL          NANDA              ISWAL              50% / 50%
+15     STR-20260401-105       YANSA /SANTI           YANSA              SANTI              50% / 50%
+
+================================================================================
+RINGKASAN DATA SESI 01 APRIL 2026
+================================================================================
+
+  KOORDINATOR YUDI (DATA 1):
+    Jumlah anggota timbang : 115 petani
+    Total tonase           : 9.039 Kg
+    Harga per Kg           : Rp 16.900
+    Tarif ADM              : Rp 100 / Kg
+    Tarif TRS (DUSUN)      : Rp 100-350 / Kg
+    Total pinjaman dipotong: Rp 6.050.000
+    Total disetor ke petani: Rp 144.680.100
+
+  KOORDINATOR ALEK (BALAM KETUA):
+    Total tonase           : 11.461 Kg
+    Harga petani (dipotong): Rp 15.900 / Kg
+
+  TOTAL GABUNGAN:
+    Total tonase           : 20.500 Kg (20.501 per sheet TOTAL)
+    Harga + fee            : Rp 17.511 / Kg
+    Total nilai            : Rp 358.993.011
+
+================================================================================
+END OF SEEDER
+================================================================================
