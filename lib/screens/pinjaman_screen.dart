@@ -418,6 +418,7 @@ class _PinjamanScreenState extends State<PinjamanScreen> {
                         TextFormField(
                           controller: _jumlahController,
                           keyboardType: TextInputType.number,
+                          onChanged: (val) => setState(() {}),
                           decoration: const InputDecoration(
                             fillColor: CarbonColors.canvas,
                             filled: true,
