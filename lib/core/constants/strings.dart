@@ -1,5 +1,5 @@
 class AppStrings {
-  static const String appTitle = 'TPK Koperasi Sawit';
+  static const String appTitle = 'TPK Koperasi Karet';
   static const String dashboard = 'Dashboard';
   static const String sesiTimbang = 'Sesi Timbang';
   static const String dataAnggota = 'Data Anggota';
@@ -67,7 +67,7 @@ class AppStrings {
   static const String errBeratNegatif = 'Berat tidak valid';
   static const String errBeratBukanAngka = 'Masukkan angka yang valid';
   static const String errPinjamanLebih = 'Nominal potong melebihi saldo aktif';
-  static const String errSetorNegatif = 'Potongan melebihi nilai kotor sawit';
+  static const String errSetorNegatif = 'Potongan melebihi nilai kotor karet';
   static const String errPorsi100 = 'Total porsi persentase harus tepat 100%';
   static const String errPilihPemilik2 = 'Pilih pemilik kedua';
   static const String errSesiTanggalSama = 'Sesi untuk tanggal ini sudah ada';

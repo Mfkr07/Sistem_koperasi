@@ -6,6 +6,7 @@ import '../core/constants/strings.dart';
 import '../providers/app_state_provider.dart';
 import '../models/anggota.dart';
 import '../widgets/table_pagination.dart';
+import '../core/services/printer_service.dart';
 
 class AnggotaScreen extends StatefulWidget {
   const AnggotaScreen({super.key});
@@ -22,8 +23,6 @@ class _AnggotaScreenState extends State<AnggotaScreen> {
 
   final _namaController = TextEditingController();
   final _noHpController = TextEditingController();
-  String _tipeAngkutan = 'SENDIRI';
-  String? _selectedKoorId;
   int _statusAktif = 1;
   int _currentPage = 1;
 
@@ -39,21 +38,13 @@ class _AnggotaScreenState extends State<AnggotaScreen> {
       _editingAnggota = null;
       _namaController.clear();
       _noHpController.clear();
-      _tipeAngkutan = 'SENDIRI';
       _statusAktif = 1;
-      if (state.koordinators.isNotEmpty) {
-        _selectedKoorId = state.koordinators.first.koordinatorId;
-      }
     });
   }
 
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppStateProvider>();
-    
-    if (_selectedKoorId == null && state.koordinators.isNotEmpty) {
-      _selectedKoorId = state.koordinators.first.koordinatorId;
-    }
 
     final filtered = state.anggotaList.where((a) {
       return a.nama.toLowerCase().contains(_searchQuery.toLowerCase()) ||
@@ -74,7 +65,7 @@ class _AnggotaScreenState extends State<AnggotaScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Data Anggota & Petani',
+                    'Data Anggota & Petani Karet',
                     style: CarbonTypography.headline.copyWith(fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 24),
@@ -141,45 +132,75 @@ class _AnggotaScreenState extends State<AnggotaScreen> {
                                       );
                                       
                                       final a = paginatedList[idx];
-                                      final k = state.koordinators.firstWhere(
-                                        (koor) => koor.koordinatorId == a.koordinatorId,
-                                        orElse: () => state.koordinators.first,
-                                      );
                                       
-                                      return ListTile(
-                                        tileColor: CarbonColors.canvas,
-                                        title: Text(a.nama),
-                                        subtitle: Text('${a.anggotaId} • ${a.tipeAngkutan} • Koor: ${k.nama}'),
-                                        trailing: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                              color: a.statusAktif == 1 ? CarbonColors.success.withOpacity(0.1) : CarbonColors.error.withOpacity(0.1),
-                                              child: Text(
-                                                a.statusAktif == 1 ? 'AKTIF' : 'NON-AKTIF',
-                                                style: CarbonTypography.caption.copyWith(
-                                                  color: a.statusAktif == 1 ? CarbonColors.success : CarbonColors.error,
-                                                  fontWeight: FontWeight.bold,
+                                      return FutureBuilder<Map<String, int>>(
+                                        future: state.getMemberFinancialSummary(a.anggotaId),
+                                        builder: (context, snapshot) {
+                                          final int totalPinjaman = snapshot.data?['totalPinjaman'] ?? 0;
+                                          final int totalSaldo = snapshot.data?['totalSaldo'] ?? 0;
+
+                                          return ListTile(
+                                            tileColor: CarbonColors.canvas,
+                                            title: Text(a.nama),
+                                            subtitle: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                const SizedBox(height: 4),
+                                                Text(a.anggotaId, style: CarbonTypography.caption),
+                                                const SizedBox(height: 4),
+                                                Row(
+                                                  children: [
+                                                    Text(
+                                                      'Pinjaman: ${PrinterService.formatCurrency(totalPinjaman)}',
+                                                      style: TextStyle(
+                                                        color: totalPinjaman > 0 ? CarbonColors.error : CarbonColors.ink,
+                                                        fontWeight: totalPinjaman > 0 ? FontWeight.bold : FontWeight.normal,
+                                                        fontSize: 12,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(width: 16),
+                                                    Text(
+                                                      'Saldo Timbang: ${PrinterService.formatCurrency(totalSaldo)}',
+                                                      style: TextStyle(
+                                                        color: totalSaldo > 0 ? CarbonColors.success : CarbonColors.ink,
+                                                        fontWeight: totalSaldo > 0 ? FontWeight.bold : FontWeight.normal,
+                                                        fontSize: 12,
+                                                      ),
+                                                    ),
+                                                  ],
                                                 ),
-                                              ),
+                                              ],
                                             ),
-                                            const SizedBox(width: 8),
-                                            IconButton(
-                                              icon: const Icon(Icons.edit_outlined, size: 20),
-                                              onPressed: () {
-                                                setState(() {
-                                                  _editingAnggota = a;
-                                                  _namaController.text = a.nama;
-                                                  _noHpController.text = a.noHp ?? '';
-                                                  _tipeAngkutan = a.tipeAngkutan;
-                                                  _selectedKoorId = a.koordinatorId;
-                                                  _statusAktif = a.statusAktif;
-                                                });
-                                              },
+                                            trailing: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Container(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                                  color: a.statusAktif == 1 ? CarbonColors.success.withOpacity(0.1) : CarbonColors.error.withOpacity(0.1),
+                                                  child: Text(
+                                                    a.statusAktif == 1 ? 'AKTIF' : 'NON-AKTIF',
+                                                    style: CarbonTypography.caption.copyWith(
+                                                      color: a.statusAktif == 1 ? CarbonColors.success : CarbonColors.error,
+                                                      fontWeight: FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 8),
+                                                IconButton(
+                                                  icon: const Icon(Icons.edit_outlined, size: 20),
+                                                  onPressed: () {
+                                                    setState(() {
+                                                      _editingAnggota = a;
+                                                      _namaController.text = a.nama;
+                                                      _noHpController.text = a.noHp ?? '';
+                                                      _statusAktif = a.statusAktif;
+                                                    });
+                                                  },
+                                                ),
+                                              ],
                                             ),
-                                          ],
-                                        ),
+                                          );
+                                        },
                                       );
                                     },
                                   ),
@@ -234,7 +255,7 @@ class _AnggotaScreenState extends State<AnggotaScreen> {
                         const SizedBox(height: 24),
 
                         // Nama
-                        Text('Nama Anggota', style: CarbonTypography.caption),
+                        Text('Nama Anggota / Petani', style: CarbonTypography.caption),
                         const SizedBox(height: 8),
                         TextFormField(
                           controller: _namaController,
@@ -245,49 +266,6 @@ class _AnggotaScreenState extends State<AnggotaScreen> {
                           ),
                         ),
                         const SizedBox(height: 20),
-
-                        // Tipe Angkutan
-                        Text('Tipe Angkutan Default', style: CarbonTypography.caption),
-                        const SizedBox(height: 8),
-                        DropdownButtonFormField<String>(
-                          value: _tipeAngkutan,
-                          isExpanded: true,
-                          items: const [
-                            DropdownMenuItem(value: 'SENDIRI', child: Text('SENDIRI (Rp. 0)')),
-                            DropdownMenuItem(value: 'DUSUN', child: Text('DUSUN (Tarif Dusun)')),
-                            DropdownMenuItem(value: 'IBOL', child: Text('IBOL (Tarif Ibol)')),
-                          ],
-                          onChanged: (val) => setState(() => _tipeAngkutan = val ?? 'SENDIRI'),
-                          decoration: const InputDecoration(
-                            fillColor: CarbonColors.canvas,
-                            filled: true,
-                            border: OutlineInputBorder(borderRadius: BorderRadius.zero),
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-
-                        // Koordinator (only editable on creation)
-                        if (_editingAnggota == null) ...[
-                          Text('Pilih Koordinator', style: CarbonTypography.caption),
-                          const SizedBox(height: 8),
-                          DropdownButtonFormField<String>(
-                            value: _selectedKoorId,
-                            isExpanded: true,
-                            items: state.koordinators.map((k) {
-                              return DropdownMenuItem(
-                                value: k.koordinatorId,
-                                child: Text(k.nama),
-                              );
-                            }).toList(),
-                            onChanged: (val) => setState(() => _selectedKoorId = val),
-                            decoration: const InputDecoration(
-                              fillColor: CarbonColors.canvas,
-                              filled: true,
-                              border: OutlineInputBorder(borderRadius: BorderRadius.zero),
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                        ],
 
                         // No HP
                         Text('Nomor HP (Opsional)', style: CarbonTypography.caption),
@@ -329,19 +307,16 @@ class _AnggotaScreenState extends State<AnggotaScreen> {
                             Expanded(
                               child: ElevatedButton(
                                 onPressed: () async {
+                                  if (_namaController.text.trim().isEmpty) return;
                                   if (_editingAnggota == null) {
-                                    if (_selectedKoorId == null) return;
                                     await state.tambahAnggota(
                                       nama: _namaController.text,
-                                      koordinatorId: _selectedKoorId!,
-                                      tipeAngkutan: _tipeAngkutan,
                                       noHp: _noHpController.text.isEmpty ? null : _noHpController.text,
                                     );
                                   } else {
                                     await state.editAnggota(
                                       anggotaId: _editingAnggota!.anggotaId,
                                       nama: _namaController.text,
-                                      tipeAngkutan: _tipeAngkutan,
                                       statusAktif: _statusAktif,
                                       noHp: _noHpController.text.isEmpty ? null : _noHpController.text,
                                     );

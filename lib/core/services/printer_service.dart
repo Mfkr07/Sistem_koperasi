@@ -153,6 +153,134 @@ class PrinterService {
     );
   }
 
+  /// Generate plain text receipt for payout
+  static String generatePayoutTextReceipt({
+    required String namaAnggota,
+    required String anggotaId,
+    required String tanggalPayout,
+    required String payoutId,
+    required List<Map<String, dynamic>> weighings,
+    required int totalBerat,
+    required int totalBruto,
+    required int totalAdm,
+    required int totalTrs,
+    required int pinjamanDipotong,
+    required int totalNetto,
+  }) {
+    final buffer = StringBuffer();
+    const divider = '=================================================================';
+
+    buffer.writeln(divider);
+    buffer.writeln(_centerText('KOPERASI UNIT DESA', 65));
+    buffer.writeln(_centerText('BERKAT', 65));
+    buffer.writeln(_centerText('Badan Hukum No. 00292/BH/PAD KWK 6/VI/1996 Tgl. 3 Juli 1996', 65));
+    buffer.writeln(_centerText('TPK Muara Ujanmas', 65));
+    buffer.writeln(divider);
+    buffer.writeln();
+    buffer.writeln(_centerText('Struk Pencairan Dana (Karet)', 65));
+    buffer.writeln(_centerText('----------------------------', 65));
+    buffer.writeln();
+
+    buffer.writeln(_leftRightAlign('ID Pencairan', ': $payoutId', 65));
+    buffer.writeln(_leftRightAlign('Tanggal', ': $tanggalPayout', 65));
+    buffer.writeln(_leftRightAlign('Nama Anggota', ': $namaAnggota ($anggotaId)', 65));
+    buffer.writeln(divider);
+    
+    buffer.writeln('  No. Struk      | Tanggal    | Berat (Kg) | Nilai Kotor (Rp)');
+    buffer.writeln('  -------------------------------------------------------------');
+    for (int i = 0; i < weighings.length; i++) {
+      final w = weighings[i];
+      final noStruk = w['no_struk'] ?? '';
+      final tgl = (w['waktu_input'] as String?)?.split('T').first ?? '';
+      final berat = '${w['berat_kg']} Kg';
+      final bruto = formatCurrency(w['harga_bruto'] ?? 0);
+      
+      final noStrukCol = noStruk.padRight(16);
+      final tglCol = tgl.padRight(10);
+      final beratCol = berat.padRight(10);
+      final brutoCol = bruto.padLeft(18);
+      buffer.writeln('  $noStrukCol | $tglCol | $beratCol | $brutoCol');
+    }
+    buffer.writeln(divider);
+    buffer.writeln();
+
+    buffer.writeln(_leftRightAlign('Total Timbangan (${weighings.length} Sesi)', ': $totalBerat Kg', 65));
+    buffer.writeln(_leftRightAlign('Total Kotor (Bruto)', ': ${formatCurrency(totalBruto)}', 65));
+    buffer.writeln();
+    
+    buffer.writeln('Potongan :');
+    buffer.writeln(_leftRightAlign('- Total Administrasi', ': ${formatCurrency(totalAdm)}', 65));
+    buffer.writeln(_leftRightAlign('- Total Ongkos Angkut', ': ${formatCurrency(totalTrs)}', 65));
+    buffer.writeln(_leftRightAlign('- Potongan Pinjaman', ': ${formatCurrency(pinjamanDipotong)}', 65));
+    buffer.writeln();
+
+    buffer.writeln(_leftRightAlign('Total Potongan', ': ${formatCurrency(totalAdm + totalTrs + pinjamanDipotong)}', 65));
+    buffer.writeln(_leftRightAlign('Jumlah Uang Diterima', ': ${formatCurrency(totalNetto)}', 65));
+    buffer.writeln(divider);
+    buffer.writeln();
+
+    buffer.writeln('      Penerima / Petani                   Bendahara / Koperasi');
+    buffer.writeln();
+    buffer.writeln();
+    buffer.writeln();
+    buffer.writeln('  (                          )         (                          )');
+    buffer.writeln(divider);
+
+    return buffer.toString();
+  }
+
+  /// Print Payout receipt to a PDF layout
+  static Future<void> printPayoutPdf({
+    required String namaAnggota,
+    required String anggotaId,
+    required String tanggalPayout,
+    required String payoutId,
+    required List<Map<String, dynamic>> weighings,
+    required int totalBerat,
+    required int totalBruto,
+    required int totalAdm,
+    required int totalTrs,
+    required int pinjamanDipotong,
+    required int totalNetto,
+  }) async {
+    final pdf = pw.Document();
+
+    final textRepresentation = generatePayoutTextReceipt(
+      namaAnggota: namaAnggota,
+      anggotaId: anggotaId,
+      tanggalPayout: tanggalPayout,
+      payoutId: payoutId,
+      weighings: weighings,
+      totalBerat: totalBerat,
+      totalBruto: totalBruto,
+      totalAdm: totalAdm,
+      totalTrs: totalTrs,
+      pinjamanDipotong: pinjamanDipotong,
+      totalNetto: totalNetto,
+    );
+
+    pdf.addPage(
+      pw.Page(
+        pageFormat: const PdfPageFormat(80 * PdfPageFormat.mm, 260 * PdfPageFormat.mm, marginAll: 5 * PdfPageFormat.mm),
+        build: (pw.Context context) {
+          return pw.Text(
+            textRepresentation,
+            style: pw.TextStyle(
+              font: pw.Font.courier(),
+              fontSize: 7.5,
+              lineSpacing: 1.2,
+            ),
+          );
+        },
+      ),
+    );
+
+    await Printing.layoutPdf(
+      onLayout: (PdfPageFormat format) async => pdf.save(),
+      name: 'Struk-Pencairan-$payoutId',
+    );
+  }
+
   // Alignment helpers
   static String _centerText(String text, int width, {bool alignRight = false}) {
     if (text.length >= width) return text;

@@ -11,6 +11,7 @@ import 'anggota_screen.dart';
 import 'pinjaman_screen.dart';
 import 'laporan_screen.dart';
 import 'pengaturan_screen.dart';
+import 'payout_screen.dart';
 
 class ShellScreen extends StatelessWidget {
   const ShellScreen({super.key});
@@ -46,6 +47,9 @@ class ShellScreen extends StatelessWidget {
         break;
       case 'pinjaman':
         currentWidget = const PinjamanScreen();
+        break;
+      case 'payout':
+        currentWidget = const PayoutScreen();
         break;
       case 'laporan':
         currentWidget = const LaporanScreen();
@@ -94,7 +98,7 @@ class ShellScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Sawit KUD Berkat',
+                        'KUD Berkat Karet',
                         style: CarbonTypography.caption.copyWith(
                           color: CarbonColors.inkMuted,
                           letterSpacing: 0.5,
@@ -145,6 +149,13 @@ class ShellScreen extends StatelessWidget {
                         label: 'Pinjaman / Hutang',
                         screenKey: 'pinjaman',
                         isActive: state.currentScreen == 'pinjaman',
+                      ),
+                      _buildSidebarItem(
+                        context,
+                        icon: Icons.payments_outlined,
+                        label: 'Pencairan Dana',
+                        screenKey: 'payout',
+                        isActive: state.currentScreen == 'payout',
                       ),
                       _buildSidebarItem(
                         context,

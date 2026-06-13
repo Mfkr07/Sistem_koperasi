@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/constants/colors.dart';
 import '../core/constants/typography.dart';
-import '../core/constants/strings.dart';
 import '../providers/app_state_provider.dart';
 import '../core/services/printer_service.dart';
 import '../core/services/export_service.dart';
@@ -10,6 +9,7 @@ import '../core/services/kalkulasi_service.dart';
 import '../core/database/database_helper.dart';
 import '../models/sesi_timbang.dart';
 import '../widgets/table_pagination.dart';
+import 'package:intl/intl.dart';
 
 class SesiTimbangScreen extends StatefulWidget {
   const SesiTimbangScreen({super.key});
@@ -145,11 +145,23 @@ class _SesiTimbangScreenState extends State<SesiTimbangScreen> {
                                         orElse: () => state.koordinators.first,
                                       );
                                       
+                                      final timeStr = () {
+                                        try {
+                                          final parsed = DateTime.parse(sesi.createdAt).toLocal();
+                                          return DateFormat('HH:mm').format(parsed);
+                                        } catch (_) {
+                                          return '';
+                                        }
+                                      }();
+                                      final displayTitle = timeStr.isNotEmpty
+                                          ? '${sesi.tanggal} - ${koor.nama} (Sesi: $timeStr)'
+                                          : '${sesi.tanggal} - ${koor.nama}';
+                                      
                                       return ListTile(
                                         tileColor: CarbonColors.canvas,
-                                        title: Text('${sesi.tanggal} - ${koor.nama}'),
+                                        title: Text(displayTitle),
                                         subtitle: Text(
-                                          'Harga: ${PrinterService.formatCurrency(sesi.hargaPerKg)} • ${sesi.status}'
+                                          'Harga Karet: ${PrinterService.formatCurrency(sesi.hargaPerKg)} • ${sesi.status}'
                                         ),
                                         trailing: Row(
                                           mainAxisSize: MainAxisSize.min,
@@ -240,8 +252,6 @@ class _SesiTimbangScreenState extends State<SesiTimbangScreen> {
           _buildDetailRow('Tanggal Sesi', active.tanggal),
           _buildDetailRow('Harga per Kg', PrinterService.formatCurrency(active.hargaPerKg)),
           _buildDetailRow('Tarif ADM', '${active.tarifAdmPerKg} / Kg'),
-          _buildDetailRow('Tarif TRS Dusun', '${active.tarifTrsDusun} / Kg'),
-          _buildDetailRow('Tarif TRS Ibol', '${active.tarifTrsIbol} / Kg'),
           const Divider(height: 32, color: CarbonColors.hairline),
           
           // Operational Expenses Panel
@@ -349,67 +359,6 @@ class _SesiTimbangScreenState extends State<SesiTimbangScreen> {
             ),
             const SizedBox(height: 20),
 
-            // ADM / TRS
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('ADM per Kg', style: CarbonTypography.caption),
-                      const SizedBox(height: 8),
-                      TextFormField(
-                        controller: _admController,
-                        keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                          fillColor: CarbonColors.surface1,
-                          filled: true,
-                          border: OutlineInputBorder(borderRadius: BorderRadius.zero),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('TRS Dusun', style: CarbonTypography.caption),
-                      const SizedBox(height: 8),
-                      TextFormField(
-                        controller: _trsDusunController,
-                        keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                          fillColor: CarbonColors.surface1,
-                          filled: true,
-                          border: OutlineInputBorder(borderRadius: BorderRadius.zero),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('TRS Ibol', style: CarbonTypography.caption),
-                      const SizedBox(height: 8),
-                      TextFormField(
-                        controller: _trsIbolController,
-                        keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                          fillColor: CarbonColors.surface1,
-                          filled: true,
-                          border: OutlineInputBorder(borderRadius: BorderRadius.zero),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
             const SizedBox(height: 32),
 
             Row(
@@ -422,9 +371,9 @@ class _SesiTimbangScreenState extends State<SesiTimbangScreen> {
                         koordinatorId: _selectedKoorId!,
                         tanggal: _tanggalController.text,
                         hargaPerKg: int.parse(_hargaController.text),
-                        tarifAdm: int.parse(_admController.text),
-                        tarifTrsDusun: int.parse(_trsDusunController.text),
-                        tarifTrsIbol: int.parse(_trsIbolController.text),
+                        tarifAdm: 100,
+                        tarifTrsDusun: 0,
+                        tarifTrsIbol: 0,
                         catatan: _catatanController.text,
                       );
 
@@ -633,9 +582,11 @@ class _SesiTimbangScreenState extends State<SesiTimbangScreen> {
     for (var tx in txList) {
       final map = Map<String, dynamic>.from(tx);
       final memberList = await dbHelper.query('anggota', where: 'anggota_id = ?', whereArgs: [tx['anggota_id']]);
+      int tarifTransport = 0;
       if (memberList.isNotEmpty) {
         map['anggota_nama'] = memberList.first['nama'];
         map['angkutan'] = memberList.first['tipe_angkutan'];
+        tarifTransport = (memberList.first['tarif_transport'] as num?)?.toInt() ?? 0;
       }
       
       final calc = KalkulasiService.hitung(
@@ -643,9 +594,7 @@ class _SesiTimbangScreenState extends State<SesiTimbangScreen> {
         porsiPersen: 100.0,
         hargaPerKg: sesi.hargaPerKg,
         tarifAdm: sesi.tarifAdmPerKg,
-        tarifTrsDusun: sesi.tarifTrsDusun,
-        tarifTrsIbol: sesi.tarifTrsIbol,
-        tipeAngkutan: map['angkutan'] ?? 'SENDIRI',
+        tarifTransport: tarifTransport,
         pinjamanDipotong: tx['pinjaman_dipotong'] as int,
       );
 

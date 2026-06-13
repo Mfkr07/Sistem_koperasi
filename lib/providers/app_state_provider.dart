@@ -5,6 +5,7 @@ import 'package:path_provider/path_provider.dart';
 import '../core/database/database_helper.dart';
 import '../core/database/seed_data_parser.dart';
 import '../core/services/kalkulasi_service.dart';
+import '../core/services/printer_service.dart';
 import '../models/koordinator.dart';
 import '../models/anggota.dart';
 import '../models/sesi_timbang.dart';
@@ -40,6 +41,21 @@ class AppStateProvider extends ChangeNotifier {
   String _currentScreen = 'dashboard';
   String get currentScreen => _currentScreen;
 
+  // Global metrics for dashboard
+  int _globalTotalPinjaman = 0;
+  int _globalActiveLoansCount = 0;
+  int _globalTotalSaldoBelumDicairkan = 0;
+  int _globalLastSessionTxCount = 0;
+  String _globalLastSessionId = '';
+  String _globalLastSessionDate = '';
+
+  int get globalTotalPinjaman => _globalTotalPinjaman;
+  int get globalActiveLoansCount => _globalActiveLoansCount;
+  int get globalTotalSaldoBelumDicairkan => _globalTotalSaldoBelumDicairkan;
+  int get globalLastSessionTxCount => _globalLastSessionTxCount;
+  String get globalLastSessionId => _globalLastSessionId;
+  String get globalLastSessionDate => _globalLastSessionDate;
+
   void setScreen(String screenName) {
     _currentScreen = screenName;
     notifyListeners();
@@ -73,6 +89,7 @@ class AppStateProvider extends ChangeNotifier {
     await fetchMembers();
     await fetchSessions();
     await checkActiveSession();
+    await calculateGlobalMetrics();
   }
 
   Future<void> fetchCoordinators() async {
@@ -129,15 +146,15 @@ class AppStateProvider extends ChangeNotifier {
         map['angkutan'] = memberList.first['tipe_angkutan'];
       }
       
+      final int tarifTransport = (tx['tarif_transport'] as num?)?.toInt() ?? 0;
+      
       // Perform calculations
       final calc = KalkulasiService.hitung(
         beratTotal: tx['berat_kg'] as int,
         porsiPersen: 100.0, // base calculation details
         hargaPerKg: _activeSesi!.hargaPerKg,
         tarifAdm: _activeSesi!.tarifAdmPerKg,
-        tarifTrsDusun: _activeSesi!.tarifTrsDusun,
-        tarifTrsIbol: _activeSesi!.tarifTrsIbol,
-        tipeAngkutan: map['angkutan'] ?? 'SENDIRI',
+        tarifTransport: tarifTransport,
         pinjamanDipotong: tx['pinjaman_dipotong'] as int,
       );
       
@@ -173,19 +190,16 @@ class AppStateProvider extends ChangeNotifier {
     required int tarifTrsIbol,
     String? catatan,
   }) async {
-    // Check if session date already exists for this coordinator
-    final existing = await _dbHelper.query(
-      'sesi_timbang',
-      where: 'koordinator_id = ? and tanggal = ?',
-      whereArgs: [koordinatorId, tanggal],
-    );
-    if (existing.isNotEmpty) {
+    // Check if there is already an open session
+    final active = await _dbHelper.query('sesi_timbang', where: "status = ?", whereArgs: ['BUKA']);
+    if (active.isNotEmpty) {
       return false;
     }
 
     final String cleanDate = tanggal.replaceAll('-', '');
     final String koorCode = koordinatorId.replaceAll('KOOR-', '');
-    final sesiId = 'SESI$cleanDate$koorCode';
+    final timestamp = DateTime.now().millisecondsSinceEpoch.toString().substring(8);
+    final sesiId = 'SESI$cleanDate$koorCode-$timestamp';
 
     final sesi = SesiTimbang(
       sesiId: sesiId,
@@ -258,57 +272,69 @@ class AppStateProvider extends ChangeNotifier {
     required int beratTotal,
     required double porsi1,
     required double porsi2,
-    required int pinjamanDipotong1,
-    required int pinjamanDipotong2,
-    String? selectedPinjamanId1,
-    String? selectedPinjamanId2,
+    required int tarifTransport1,
+    required int tarifTransport2,
   }) async {
     if (_activeSesi == null) return;
 
     final timestamp = DateTime.now().toIso8601String();
-    final uniqueId = 'TRX-${DateTime.now().millisecondsSinceEpoch}';
-    final noStruk = await generateNextNoStruk(_activeSesi!.tanggal);
+    final noStruk1 = await generateNextNoStruk(_activeSesi!.tanggal);
 
-    // Retrieve default transport type for primary member
-    final members = await _dbHelper.query('anggota', where: 'anggota_id = ?', whereArgs: [anggotaId1]);
-    final tipeAngkutan = members.isNotEmpty ? members.first['tipe_angkutan'] as String : 'SENDIRI';
+    int weightPart1 = beratTotal;
+    int weightPart2 = 0;
+    if (anggotaId2 != null && porsi2 > 0) {
+      final parts = KalkulasiService.hitungBeratPorsiBersama(beratTotal, porsi1, porsi2);
+      weightPart1 = parts[0];
+      weightPart2 = parts[1];
+    }
 
-    // Insert Base Transaction
-    final tx = Transaksi(
-      transaksiId: uniqueId,
+    // Insert Primary Transaction
+    final uniqueId1 = 'TRX-${DateTime.now().millisecondsSinceEpoch}-1';
+    final tx1 = Transaksi(
+      transaksiId: uniqueId1,
       sesiId: _activeSesi!.sesiId,
       anggotaId: anggotaId1,
-      beratKg: beratTotal,
-      pinjamanDipotong: pinjamanDipotong1 + pinjamanDipotong2,
-      noStruk: noStruk,
+      beratKg: weightPart1,
+      pinjamanDipotong: 0,
+      noStruk: noStruk1,
       waktuInput: timestamp,
+      tarifTransport: tarifTransport1,
     );
-    await _dbHelper.insert('transaksi', tx.toMap());
+    await _dbHelper.insert('transaksi', tx1.toMap());
 
-    // If joint ownership is active, record ownership splits
+    // Insert Secondary Transaction if joint ownership is active
     if (anggotaId2 != null && porsi2 > 0) {
+      final uniqueId2 = 'TRX-${DateTime.now().millisecondsSinceEpoch}-2';
+      final noStruk2 = await generateNextNoStruk(_activeSesi!.tanggal);
+      final tx2 = Transaksi(
+        transaksiId: uniqueId2,
+        sesiId: _activeSesi!.sesiId,
+        anggotaId: anggotaId2,
+        beratKg: weightPart2,
+        pinjamanDipotong: 0,
+        noStruk: noStruk2,
+        waktuInput: timestamp,
+        tarifTransport: tarifTransport2,
+      );
+      await _dbHelper.insert('transaksi', tx2.toMap());
+
+      // Insert link details in kepemilikan_bersama for backward compatibility/history
+      final members = await _dbHelper.query('anggota', where: 'anggota_id = ?', whereArgs: [anggotaId1]);
+      final member2 = await _dbHelper.query('anggota', where: 'anggota_id = ?', whereArgs: [anggotaId2]);
+      
       await _dbHelper.insert('kepemilikan_bersama', {
-        'transaksi_id': uniqueId,
+        'transaksi_id': uniqueId1,
         'anggota_id': anggotaId1,
         'porsi_persen': porsi1,
-        'catatan': members.first['nama'],
+        'catatan': members.isNotEmpty ? members.first['nama'] : '',
       });
 
-      final member2 = await _dbHelper.query('anggota', where: 'anggota_id = ?', whereArgs: [anggotaId2]);
       await _dbHelper.insert('kepemilikan_bersama', {
-        'transaksi_id': uniqueId,
+        'transaksi_id': uniqueId1,
         'anggota_id': anggotaId2,
         'porsi_persen': porsi2,
-        'catatan': member2.first['nama'],
+        'catatan': member2.isNotEmpty ? member2.first['nama'] : '',
       });
-    }
-
-    // Process Loan Repayments
-    if (pinjamanDipotong1 > 0) {
-      await _applyLoanRepayment(anggotaId1, pinjamanDipotong1, selectedPinjamanId1);
-    }
-    if (anggotaId2 != null && pinjamanDipotong2 > 0) {
-      await _applyLoanRepayment(anggotaId2, pinjamanDipotong2, selectedPinjamanId2);
     }
 
     await fetchActiveSessionData();
@@ -524,20 +550,31 @@ class AppStateProvider extends ChangeNotifier {
 
   Future<void> tambahAnggota({
     required String nama,
-    required String koordinatorId,
-    required String tipeAngkutan,
+    String? koordinatorId,
+    String tipeAngkutan = 'SENDIRI',
+    int tarifTransport = 0,
     String? noHp,
   }) async {
     final timestamp = DateTime.now().toIso8601String();
     final anggotaId = 'ANK-Y${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}';
 
+    String targetKoorId = koordinatorId ?? '';
+    if (targetKoorId.isEmpty) {
+      if (_koordinators.isNotEmpty) {
+        targetKoorId = _koordinators.first.koordinatorId;
+      } else {
+        targetKoorId = 'KOOR-GLOBAL';
+      }
+    }
+
     final member = Anggota(
       anggotaId: anggotaId,
-      koordinatorId: koordinatorId,
+      koordinatorId: targetKoorId,
       nama: nama,
       tipeAngkutan: tipeAngkutan,
       noHp: noHp,
       statusAktif: 1,
+      tarifTransport: tarifTransport,
       createdAt: timestamp,
     );
 
@@ -548,7 +585,8 @@ class AppStateProvider extends ChangeNotifier {
   Future<void> editAnggota({
     required String anggotaId,
     required String nama,
-    required String tipeAngkutan,
+    String tipeAngkutan = 'SENDIRI',
+    int tarifTransport = 0,
     required int statusAktif,
     String? noHp,
   }) async {
@@ -557,6 +595,7 @@ class AppStateProvider extends ChangeNotifier {
       {
         'nama': nama,
         'tipe_angkutan': tipeAngkutan,
+        'tarif_transport': tarifTransport,
         'status_aktif': statusAktif,
         'no_hp': noHp,
       },
@@ -593,10 +632,267 @@ class AppStateProvider extends ChangeNotifier {
     await fetchActiveSessionData();
   }
 
+  // --- Payout (Pencairan Dana) Operations ---
+
+  Future<List<Map<String, dynamic>>> getUnpaidTransactions(String anggotaId) async {
+    final list = await _dbHelper.query(
+      'transaksi',
+      where: 'anggota_id = ? and pencairan_id is null and is_void = 0',
+      whereArgs: [anggotaId],
+      orderBy: 'waktu_input ASC',
+    );
+    
+    List<Map<String, dynamic>> results = [];
+    for (var tx in list) {
+      final map = Map<String, dynamic>.from(tx);
+      final sessionList = await _dbHelper.query('sesi_timbang', where: 'sesi_id = ?', whereArgs: [tx['sesi_id']]);
+      if (sessionList.isNotEmpty) {
+        final session = sessionList.first;
+        final int hargaPerKg = session['harga_per_kg'] as int;
+        final int tarifAdm = session['tarif_adm_per_kg'] as int;
+        final int tarifTransport = (tx['tarif_transport'] as num?)?.toInt() ?? 0;
+        
+        final calc = KalkulasiService.hitung(
+          beratTotal: tx['berat_kg'] as int,
+          porsiPersen: 100.0,
+          hargaPerKg: hargaPerKg,
+          tarifAdm: tarifAdm,
+          tarifTransport: tarifTransport,
+          pinjamanDipotong: 0,
+        );
+        
+        map['harga_bruto'] = calc.hargaBruto;
+        map['biaya_adm'] = calc.biayaAdm;
+        map['biaya_trs'] = calc.biayaTrs;
+        map['total_potongan'] = calc.totalPotongan;
+        map['jumlah_disetor'] = calc.jumlahDisetor;
+        results.add(map);
+      }
+    }
+    return results;
+  }
+
+  Future<bool> pencairkanDana({
+    required String anggotaId,
+    required int pinjamanDipotong,
+  }) async {
+    _isLoading = true;
+    notifyListeners();
+    
+    try {
+      final unpaidTx = await getUnpaidTransactions(anggotaId);
+      if (unpaidTx.isEmpty) return false;
+      
+      final memberList = await _dbHelper.query('anggota', where: 'anggota_id = ?', whereArgs: [anggotaId]);
+      if (memberList.isEmpty) return false;
+      final memberName = memberList.first['nama'] as String;
+      
+      int totalBerat = 0;
+      int totalBruto = 0;
+      int totalAdm = 0;
+      int totalTrs = 0;
+      int totalNetto = 0;
+      
+      for (var tx in unpaidTx) {
+        totalBerat += tx['berat_kg'] as int;
+        totalBruto += tx['harga_bruto'] as int;
+        totalAdm += tx['biaya_adm'] as int;
+        totalTrs += tx['biaya_trs'] as int;
+        totalNetto += tx['jumlah_disetor'] as int;
+      }
+      
+      final payoutId = 'OUT-${DateTime.now().millisecondsSinceEpoch}';
+      final tanggal = DateTime.now().toIso8601String().substring(0, 10);
+      final timestamp = DateTime.now().toIso8601String();
+      
+      // Insert payout record
+      await _dbHelper.insert('pencairan_dana', {
+        'pencairan_id': payoutId,
+        'anggota_id': anggotaId,
+        'tanggal': tanggal,
+        'total_berat': totalBerat,
+        'total_bruto': totalBruto,
+        'total_adm': totalAdm,
+        'total_trs': totalTrs,
+        'total_pinjaman_dipotong': pinjamanDipotong,
+        'total_netto': totalNetto - pinjamanDipotong,
+        'waktu_input': timestamp,
+      });
+      
+      // Update transactions with payoutId
+      for (var tx in unpaidTx) {
+        await _dbHelper.update(
+          'transaksi',
+          {'pencairan_id': payoutId},
+          where: 'transaksi_id = ?',
+          whereArgs: [tx['transaksi_id']],
+        );
+      }
+      
+      // Apply loan deduction if any
+      if (pinjamanDipotong > 0) {
+        await _applyLoanRepayment(anggotaId, pinjamanDipotong, 'FIFO');
+      }
+      
+      // Print layout combined receipt
+      await PrinterService.printPayoutPdf(
+        namaAnggota: memberName,
+        anggotaId: anggotaId,
+        tanggalPayout: tanggal,
+        payoutId: payoutId,
+        weighings: unpaidTx,
+        totalBerat: totalBerat,
+        totalBruto: totalBruto,
+        totalAdm: totalAdm,
+        totalTrs: totalTrs,
+        pinjamanDipotong: pinjamanDipotong,
+        totalNetto: totalNetto - pinjamanDipotong,
+      );
+      
+      await refreshData();
+      return true;
+    } catch (e) {
+      if (kDebugMode) print("Payout error: $e");
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getAllPencairan() async {
+    final list = await _dbHelper.query('pencairan_dana', orderBy: 'waktu_input DESC');
+    List<Map<String, dynamic>> hydrated = [];
+    for (var p in list) {
+      final map = Map<String, dynamic>.from(p);
+      final member = await _dbHelper.query('anggota', where: 'anggota_id = ?', whereArgs: [p['anggota_id']]);
+      if (member.isNotEmpty) {
+        map['anggota_nama'] = member.first['nama'];
+      } else {
+        map['anggota_nama'] = 'Tidak Diketahui';
+      }
+      hydrated.add(map);
+    }
+    return hydrated;
+  }
+
   // --- Global Database Utilities ---
   
   Future<void> clearDatabase() async {
     await _dbHelper.clearAllData();
     await refreshData();
+  }
+
+  Future<Map<String, int>> getMemberFinancialSummary(String anggotaId) async {
+    // 1. Get total active loans
+    final loanRows = await _dbHelper.query(
+      'pinjaman',
+      where: 'anggota_id = ? and status = ?',
+      whereArgs: [anggotaId, 'AKTIF'],
+    );
+    int totalPinjaman = 0;
+    for (var row in loanRows) {
+      totalPinjaman += (row['saldo_sisa'] as num).toInt();
+    }
+
+    // 2. Get unpaid balance
+    final unpaidTx = await getUnpaidTransactions(anggotaId);
+    int totalSaldo = 0;
+    for (var tx in unpaidTx) {
+      totalSaldo += (tx['jumlah_disetor'] as num).toInt();
+    }
+
+    return {
+      'totalPinjaman': totalPinjaman,
+      'totalSaldo': totalSaldo,
+    };
+  }
+
+  Future<void> calculateGlobalMetrics() async {
+    // 1. Total active loans
+    final loanRows = await _dbHelper.query(
+      'pinjaman',
+      where: 'status = ?',
+      whereArgs: ['AKTIF'],
+    );
+    int totalPinjaman = 0;
+    int activeLoansCount = 0;
+    for (var row in loanRows) {
+      totalPinjaman += (row['saldo_sisa'] as num).toInt();
+      activeLoansCount++;
+    }
+    _globalTotalPinjaman = totalPinjaman;
+    _globalActiveLoansCount = activeLoansCount;
+
+    // 2. Total unpaid balance (Saldo Timbang belum dicairkan)
+    int totalSaldoBelumDicairkan = 0;
+    for (var m in _anggotaList) {
+      final unpaidTx = await getUnpaidTransactions(m.anggotaId);
+      for (var tx in unpaidTx) {
+        totalSaldoBelumDicairkan += (tx['jumlah_disetor'] as num).toInt();
+      }
+    }
+    _globalTotalSaldoBelumDicairkan = totalSaldoBelumDicairkan;
+
+    // 3. Last session transaction count
+    int lastSessionTxCount = 0;
+    String lastSessionId = '';
+    String lastSessionDate = '';
+    
+    final sessionRows = await _dbHelper.query(
+      'sesi_timbang',
+      orderBy: 'created_at DESC',
+    );
+    if (sessionRows.isNotEmpty) {
+      lastSessionId = sessionRows.first['sesi_id'] as String;
+      lastSessionDate = sessionRows.first['tanggal'] as String;
+      final txCountRows = await _dbHelper.rawQuery(
+        'SELECT COUNT(*) as cnt FROM transaksi WHERE sesi_id = ? and is_void = 0',
+        [lastSessionId],
+      );
+      if (txCountRows.isNotEmpty) {
+        lastSessionTxCount = (txCountRows.first['cnt'] as num).toInt();
+      }
+    }
+    _globalLastSessionTxCount = lastSessionTxCount;
+    _globalLastSessionId = lastSessionId;
+    _globalLastSessionDate = lastSessionDate;
+  }
+
+  Future<List<Map<String, dynamic>>> getPayoutWeighings(String payoutId) async {
+    final txList = await _dbHelper.query(
+      'transaksi',
+      where: 'pencairan_id = ?',
+      whereArgs: [payoutId],
+      orderBy: 'waktu_input ASC',
+    );
+    List<Map<String, dynamic>> hydrated = [];
+    for (var tx in txList) {
+      final map = Map<String, dynamic>.from(tx);
+      final sessionList = await _dbHelper.query('sesi_timbang', where: 'sesi_id = ?', whereArgs: [tx['sesi_id']]);
+      if (sessionList.isNotEmpty) {
+        final session = sessionList.first;
+        final int hargaPerKg = session['harga_per_kg'] as int;
+        final int tarifAdm = session['tarif_adm_per_kg'] as int;
+        final int tarifTransport = (tx['tarif_transport'] as num?)?.toInt() ?? 0;
+        
+        final calc = KalkulasiService.hitung(
+          beratTotal: tx['berat_kg'] as int,
+          porsiPersen: 100.0,
+          hargaPerKg: hargaPerKg,
+          tarifAdm: tarifAdm,
+          tarifTransport: tarifTransport,
+          pinjamanDipotong: 0,
+        );
+        
+        map['harga_bruto'] = calc.hargaBruto;
+        map['biaya_adm'] = calc.biayaAdm;
+        map['biaya_trs'] = calc.biayaTrs;
+        map['total_potongan'] = calc.totalPotongan;
+        map['jumlah_disetor'] = calc.jumlahDisetor;
+        hydrated.add(map);
+      }
+    }
+    return hydrated;
   }
 }

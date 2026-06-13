@@ -18,6 +18,7 @@ class DatabaseHelper {
     'pinjaman': [],
     'pengeluaran': [],
     'kepemilikan_bersama': [],
+    'pencairan_dana': [],
   };
 
   DatabaseHelper._init();
@@ -45,13 +46,43 @@ class DatabaseHelper {
     // Ensure parent directory exists
     await Directory(p.dirname(path)).create(recursive: true);
 
-    return await databaseFactory.openDatabase(
+    final db = await databaseFactory.openDatabase(
       path,
       options: OpenDatabaseOptions(
         version: 1,
         onCreate: _createDB,
       ),
     );
+
+    // Dynamic schema migrations for existing local databases
+    try {
+      await db.execute('ALTER TABLE anggota ADD COLUMN tarif_transport INTEGER DEFAULT 0');
+    } catch (_) {}
+    try {
+      await db.execute('ALTER TABLE transaksi ADD COLUMN pencairan_id TEXT');
+    } catch (_) {}
+    try {
+      await db.execute('ALTER TABLE transaksi ADD COLUMN tarif_transport INTEGER DEFAULT 0');
+    } catch (_) {}
+    try {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS pencairan_dana (
+          pencairan_id TEXT PRIMARY KEY,
+          anggota_id TEXT NOT NULL,
+          tanggal TEXT NOT NULL,
+          total_berat INTEGER NOT NULL,
+          total_bruto INTEGER NOT NULL,
+          total_adm INTEGER NOT NULL,
+          total_trs INTEGER NOT NULL,
+          total_pinjaman_dipotong INTEGER NOT NULL,
+          total_netto INTEGER NOT NULL,
+          waktu_input TEXT NOT NULL,
+          FOREIGN KEY (anggota_id) REFERENCES anggota (anggota_id)
+        )
+      ''');
+    } catch (_) {}
+
+    return db;
   }
 
   Future _createDB(Database db, int version) async {
@@ -72,6 +103,7 @@ class DatabaseHelper {
         tipe_angkutan TEXT NOT NULL,
         no_hp TEXT,
         status_aktif INTEGER DEFAULT 1,
+        tarif_transport INTEGER DEFAULT 0,
         created_at TEXT NOT NULL,
         FOREIGN KEY (koordinator_id) REFERENCES koordinator (koordinator_id)
       )
@@ -106,6 +138,8 @@ class DatabaseHelper {
         waktu_cetak TEXT,
         waktu_input TEXT NOT NULL,
         is_void INTEGER DEFAULT 0,
+        pencairan_id TEXT,
+        tarif_transport INTEGER DEFAULT 0,
         FOREIGN KEY (sesi_id) REFERENCES sesi_timbang (sesi_id),
         FOREIGN KEY (anggota_id) REFERENCES anggota (anggota_id)
       )
@@ -149,6 +183,22 @@ class DatabaseHelper {
         FOREIGN KEY (anggota_id) REFERENCES anggota (anggota_id)
       )
     ''');
+
+    await db.execute('''
+      CREATE TABLE pencairan_dana (
+        pencairan_id TEXT PRIMARY KEY,
+        anggota_id TEXT NOT NULL,
+        tanggal TEXT NOT NULL,
+        total_berat INTEGER NOT NULL,
+        total_bruto INTEGER NOT NULL,
+        total_adm INTEGER NOT NULL,
+        total_trs INTEGER NOT NULL,
+        total_pinjaman_dipotong INTEGER NOT NULL,
+        total_netto INTEGER NOT NULL,
+        waktu_input TEXT NOT NULL,
+        FOREIGN KEY (anggota_id) REFERENCES anggota (anggota_id)
+      )
+    ''');
   }
 
   // Generic DB Methods abstracting Desktop / Web
@@ -187,7 +237,7 @@ class DatabaseHelper {
       }
       
       // On conflicts, replace
-      if (table == 'koordinator' || table == 'anggota' || table == 'sesi_timbang' || table == 'transaksi' || table == 'pinjaman' || table == 'pengeluaran') {
+      if (table == 'pencairan_dana' || table == 'koordinator' || table == 'anggota' || table == 'sesi_timbang' || table == 'transaksi' || table == 'pinjaman' || table == 'pengeluaran') {
         final keyName = '${table}_id';
         list.removeWhere((item) => item[keyName] == row[keyName]);
       }

@@ -9,9 +9,7 @@ void main() {
         porsiPersen: 100.0,
         hargaPerKg: 17130,
         tarifAdm: 100,
-        tarifTrsDusun: 100,
-        tarifTrsIbol: 350,
-        tipeAngkutan: 'SENDIRI',
+        tarifTransport: 0,
         pinjamanDipotong: 0,
       );
 
@@ -23,25 +21,22 @@ void main() {
       expect(res.jumlahDisetor, 1703000);
     });
 
-    test('Standard Single Owner Timbangan (Tipe Dusun)', () {
+    test('Standard Single Owner Timbangan (Tipe Dusun/Ibol with Rate)', () {
       final res = KalkulasiService.hitung(
         beratTotal: 150,
         porsiPersen: 100.0,
         hargaPerKg: 17130,
         tarifAdm: 100,
-        tarifTrsDusun: 120, // custom Dusun rate
-        tarifTrsIbol: 350,
-        tipeAngkutan: 'DUSUN',
-        pinjamanDipotong: 50000,
+        tarifTransport: 120, // custom rate
+        pinjamanDipotong: 0, // no loan deductions at weighing
       );
 
       expect(res.beratPorsi, 150);
       expect(res.hargaBruto, 2569500); // 150 * 17130
       expect(res.biayaAdm, 15000);    // 150 * 100
       expect(res.biayaTrs, 18000);    // 150 * 120
-      expect(res.pinjamanDipotong, 50000);
-      expect(res.totalPotongan, 15000 + 18000 + 50000); // 83000
-      expect(res.jumlahDisetor, 2569500 - 83000); // 2486500
+      expect(res.totalPotongan, 15000 + 18000); // 33000
+      expect(res.jumlahDisetor, 2569500 - 33000); // 2536500
     });
 
     test('Joint Ownership Weight Splitting (Odd Weight)', () {
@@ -67,9 +62,7 @@ void main() {
         porsiPersen: 50.0,
         hargaPerKg: 17130,
         tarifAdm: 100,
-        tarifTrsDusun: 100,
-        tarifTrsIbol: 350,
-        tipeAngkutan: 'SENDIRI',
+        tarifTransport: 0,
         pinjamanDipotong: 0,
         customBeratPorsi: parts[0],
       );
@@ -79,9 +72,7 @@ void main() {
         porsiPersen: 50.0,
         hargaPerKg: 17130,
         tarifAdm: 100,
-        tarifTrsDusun: 100,
-        tarifTrsIbol: 350,
-        tipeAngkutan: 'SENDIRI',
+        tarifTransport: 0,
         pinjamanDipotong: 0,
         customBeratPorsi: parts[1],
       );

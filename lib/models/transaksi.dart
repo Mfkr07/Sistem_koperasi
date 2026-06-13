@@ -9,6 +9,8 @@ class Transaksi {
   final String? waktuCetak;
   final String waktuInput;
   final int isVoid; // 0 = valid, 1 = void
+  final String? pencairanId;
+  final int tarifTransport;
 
   Transaksi({
     required this.transaksiId,
@@ -21,6 +23,8 @@ class Transaksi {
     this.waktuCetak,
     required this.waktuInput,
     this.isVoid = 0,
+    this.pencairanId,
+    this.tarifTransport = 0,
   });
 
   Map<String, dynamic> toMap() {
@@ -35,6 +39,8 @@ class Transaksi {
       'waktu_cetak': waktuCetak,
       'waktu_input': waktuInput,
       'is_void': isVoid,
+      'pencairan_id': pencairanId,
+      'tarif_transport': tarifTransport,
     };
   }
 
@@ -50,6 +56,8 @@ class Transaksi {
       waktuCetak: map['waktu_cetak'] as String?,
       waktuInput: map['waktu_input'] as String,
       isVoid: map['is_void'] as int,
+      pencairanId: map['pencairan_id'] as String?,
+      tarifTransport: map['tarif_transport'] as int? ?? 0,
     );
   }
 }

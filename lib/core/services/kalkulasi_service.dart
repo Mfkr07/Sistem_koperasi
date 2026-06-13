@@ -34,9 +34,7 @@ class KalkulasiService {
     required double porsiPersen,
     required int hargaPerKg,
     required int tarifAdm,
-    required int tarifTrsDusun,
-    required int tarifTrsIbol,
-    required String tipeAngkutan,
+    required int tarifTransport,
     required int pinjamanDipotong,
     int? customBeratPorsi,
   }) {
@@ -50,13 +48,7 @@ class KalkulasiService {
     int biayaAdm = beratPorsi * tarifAdm;
 
     // TRS
-    int tarifTrs = 0;
-    if (tipeAngkutan.toUpperCase() == 'DUSUN') {
-      tarifTrs = tarifTrsDusun;
-    } else if (tipeAngkutan.toUpperCase() == 'IBOL') {
-      tarifTrs = tarifTrsIbol;
-    }
-    int biayaTrs = beratPorsi * tarifTrs;
+    int biayaTrs = beratPorsi * tarifTransport;
 
     // Total Potongan
     int totalPotongan = biayaAdm + biayaTrs + pinjamanDipotong;

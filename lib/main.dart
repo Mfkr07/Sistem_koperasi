@@ -18,7 +18,7 @@ class MyApp extends StatelessWidget {
     return ChangeNotifierProvider(
       create: (_) => AppStateProvider()..initApp(),
       child: MaterialApp(
-        title: 'TPK Koperasi Sawit KUD Berkat',
+        title: 'TPK Koperasi Karet KUD Berkat',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           useMaterial3: true,

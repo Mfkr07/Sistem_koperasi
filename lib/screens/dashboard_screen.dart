@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
 import '../core/constants/colors.dart';
 import '../core/constants/typography.dart';
-import '../core/constants/strings.dart';
 import '../providers/app_state_provider.dart';
 import '../core/services/printer_service.dart';
 
@@ -14,20 +12,6 @@ class DashboardScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final state = context.watch<AppStateProvider>();
     
-    // Calculate dashboard statistics
-    int totalTransactions = 0;
-    int totalTonnage = 0;
-    int totalLoansPaid = 0;
-    int activeLoansCount = 0;
-
-    for (var sesi in state.sessions) {
-      // We can aggregate from completed sessions or database
-    }
-
-    // Let's compute directly from our lists for simplicity
-    // To make it accurate to the seeder, let's fetch active loans
-    final activeLoans = state.anggotaList.isNotEmpty ? 15 : 0; // Seeder has 15 loans
-
     return Scaffold(
       backgroundColor: CarbonColors.canvas,
       body: SingleChildScrollView(
@@ -45,7 +29,7 @@ class DashboardScreen extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Koperasi Unit Desa Berkat - Data April 2026',
+              'Koperasi Unit Desa Berkat',
               style: CarbonTypography.eyebrow,
             ),
             const Divider(height: 48, color: CarbonColors.hairline),
@@ -55,18 +39,20 @@ class DashboardScreen extends StatelessWidget {
               children: [
                 Expanded(
                   child: _buildMetricCard(
-                    title: 'Total Tonase Sawit',
-                    value: '20.500 Kg',
-                    subtitle: 'YUDI: 9.039 Kg | ALEK: 11.461 Kg',
-                    icon: Icons.scale_outlined,
+                    title: 'Saldo Belum Dicairkan',
+                    value: PrinterService.formatCurrency(state.globalTotalSaldoBelumDicairkan),
+                    subtitle: 'Akumulasi dana timbangan karet petani',
+                    icon: Icons.account_balance_wallet_outlined,
                   ),
                 ),
                 const SizedBox(width: 20),
                 Expanded(
                   child: _buildMetricCard(
-                    title: 'Total Transaksi',
-                    value: '123 Struk',
-                    subtitle: 'April 2026 data seeder',
+                    title: 'Transaksi Sesi Terakhir',
+                    value: '${state.globalLastSessionTxCount} Struk',
+                    subtitle: state.globalLastSessionId.isNotEmpty
+                        ? 'Sesi: ${state.globalLastSessionId}'
+                        : 'Belum ada sesi tercatat',
                     icon: Icons.receipt_long_outlined,
                   ),
                 ),
@@ -74,8 +60,8 @@ class DashboardScreen extends StatelessWidget {
                 Expanded(
                   child: _buildMetricCard(
                     title: 'Saldo Pinjaman Aktif',
-                    value: PrinterService.formatCurrency(0), // All seeder loans are now LUNAS
-                    subtitle: '0 Pinjaman Belum Lunas',
+                    value: PrinterService.formatCurrency(state.globalTotalPinjaman),
+                    subtitle: '${state.globalActiveLoansCount} Pinjaman Belum Lunas',
                     icon: Icons.account_balance_outlined,
                   ),
                 ),
@@ -110,7 +96,7 @@ class DashboardScreen extends StatelessWidget {
                         if (state.activeSesi != null) ...[
                           _buildSessionDetailRow('Sesi ID', state.activeSesi!.sesiId),
                           _buildSessionDetailRow('Tanggal', state.activeSesi!.tanggal),
-                          _buildSessionDetailRow('Harga Sawit', PrinterService.formatCurrency(state.activeSesi!.hargaPerKg)),
+                          _buildSessionDetailRow('Harga Karet', PrinterService.formatCurrency(state.activeSesi!.hargaPerKg)),
                           _buildSessionDetailRow('Tarif ADM', '${state.activeSesi!.tarifAdmPerKg} / Kg'),
                           const SizedBox(height: 32),
                           Row(

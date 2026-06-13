@@ -40,9 +40,13 @@ class _LaporanScreenState extends State<LaporanScreen> {
       
       // Hydrate Member
       final member = await dbHelper.query('anggota', where: 'anggota_id = ?', whereArgs: [tx['anggota_id']]);
+      int tarifTransport = (tx['tarif_transport'] as num?)?.toInt() ?? 0;
       if (member.isNotEmpty) {
         map['anggota_nama'] = member.first['nama'];
         map['angkutan'] = member.first['tipe_angkutan'];
+        if (tx['tarif_transport'] == null) {
+          tarifTransport = (member.first['tarif_transport'] as num?)?.toInt() ?? 0;
+        }
       }
       
       // Hydrate Session
@@ -56,9 +60,7 @@ class _LaporanScreenState extends State<LaporanScreen> {
           porsiPersen: 100.0,
           hargaPerKg: session.first['harga_per_kg'] as int,
           tarifAdm: session.first['tarif_adm_per_kg'] as int,
-          tarifTrsDusun: session.first['tarif_trs_dusun'] as int,
-          tarifTrsIbol: session.first['tarif_trs_ibol'] as int,
-          tipeAngkutan: map['angkutan'] ?? 'SENDIRI',
+          tarifTransport: tarifTransport,
           pinjamanDipotong: tx['pinjaman_dipotong'] as int,
         );
 
@@ -129,7 +131,7 @@ class _LaporanScreenState extends State<LaporanScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Monitoring rekap timbangan dan keuangan koperasi sawit.',
+                        'Monitoring rekap timbangan dan keuangan koperasi karet.',
                         style: CarbonTypography.caption,
                         overflow: TextOverflow.ellipsis,
                         maxLines: 1,
